@@ -30,7 +30,7 @@ Desarrollar una plataforma tecnológica centralizada que optimice la gestión, r
 
 - Backend: .NET / C#
 - Frontend: cshtml
-- Base de datos: SQLite
+- Base de datos: SQLite (temporalmente)
 
 ---
 
