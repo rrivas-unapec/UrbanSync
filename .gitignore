@@ -1,6 +1,9 @@
 bin/
 obj/
 
+.env
+.DS_Store
+
 .vs/
 .vscode/
 
@@ -18,3 +21,13 @@ node_modules/
 publish/
 
 TestResults/
+
+# Flutter/Dart build artifacts (mobile/)
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+mobile/ios/Flutter/
+mobile/ios/Runner/GeneratedPluginRegistrant.*
