@@ -46,6 +46,35 @@ public sealed class UrbanSyncApiClient : IUrbanSyncApiClient
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<ApiReportSummaryDto?> GetReportsSummaryAsync(CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<ApiReportSummaryDto>("api/reports/summary", _jsonOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ApiIncidentDto>> GetIncidentsAsync(string? estado = null, CancellationToken cancellationToken = default)
+    {
+        var url = "api/incidents";
+
+        if (!string.IsNullOrWhiteSpace(estado))
+            url += $"?status={Uri.EscapeDataString(estado)}";
+
+        var result = await _httpClient.GetFromJsonAsync<List<ApiIncidentDto>>(url, _jsonOptions, cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task<ApiIncidentDto?> TriageIncidentAsync(int id, ApiIncidentTriageRequest request, CancellationToken cancellationToken = default)
+    {
+        using var response = await _httpClient.PatchAsJsonAsync($"api/incidents/{id}/triage", request, _jsonOptions, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<ApiIncidentDto>(_jsonOptions, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ApiWorkOrderDto>> GetWorkOrdersAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await _httpClient.GetFromJsonAsync<List<ApiWorkOrderDto>>("api/work-orders", _jsonOptions, cancellationToken);
+        return result ?? [];
+    }
+
     private async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)

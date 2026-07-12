@@ -1,0 +1,75 @@
+@model MapaViewModel
+@{
+    Layout = "_AdminLayout";
+}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="fw-bold mb-1">Mapa de la ciudad</h1>
+        @if (Model.DatosDisponibles && Model.Puntos.Count > 0)
+        {
+            <p class="text-muted mb-0" id="mapSubtitle">@Model.Tipos.Count capas activas</p>
+        }
+    </div>
+
+    @if (Model.DatosDisponibles && Model.Puntos.Count > 0)
+    {
+        <div class="d-flex gap-2">
+            <button type="button" id="mapClusterToggle" class="admin-a11y-btn admin-map-toggle-cluster active">
+                <i class="bi bi-collection"></i>
+                <span>Clustering</span>
+            </button>
+            <button type="button" id="mapHeatToggle" class="admin-a11y-btn admin-map-toggle-heat">
+                <i class="bi bi-fire"></i>
+                <span>Mapa de calor</span>
+            </button>
+        </div>
+    }
+</div>
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else if (Model.Puntos.Count == 0)
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-geo-alt fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1">Sin incidencias georreferenciadas</h3>
+            <p class="text-muted mb-0">No hay reportes con latitud/longitud registrada todavía.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="px-3 py-3 border-bottom d-flex flex-wrap gap-2">
+            @foreach (var tipo in Model.Tipos)
+            {
+                <button type="button" class="admin-map-chip active" data-map-filter="@tipo.Nombre" style="background-color:@(tipo.Color)18; color:@tipo.Color;">
+                    <span class="admin-map-chip-dot" style="background-color:@tipo.Color;"></span>
+                    @tipo.Nombre
+                </button>
+            }
+        </div>
+        <div id="incidentMap"></div>
+    </div>
+
+    <script type="application/json" id="mapPointsData">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Puntos, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase }))</script>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="~/js/admin-map.js" asp-append-version="true"></script>
+}
