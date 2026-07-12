@@ -11,10 +11,10 @@ public class DashboardController : Controller
         if (User.IsInRole("Administrador"))
             return View("Administrador");
 
-        if (User.IsInRole("Supervisor"))
+        if (User.IsInRole("Supervisor") || User.IsInRole("SupervisorOperaciones"))
             return View("Supervisor");
 
-        if (User.IsInRole("Tecnico"))
+        if (User.IsInRole("Tecnico") || User.IsInRole("AnalistaTecnico"))
             return View("Tecnico");
 
         return View("Ciudadano");

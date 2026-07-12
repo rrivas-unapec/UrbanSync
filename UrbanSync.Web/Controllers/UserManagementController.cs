@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using UrbanSync.Web.Models;
 using UrbanSync.Web.Services;
 using UrbanSync.Web.ViewModels;
 
@@ -10,98 +8,87 @@ namespace UrbanSync.Web.Controllers;
 [Authorize(Roles = "Administrador")]
 public class UserManagementController : Controller
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUrbanSyncApiClient _api;
     private readonly ActivityLogger _activityLogger;
 
-    public UserManagementController(
-        UserManager<ApplicationUser> userManager,
-        ActivityLogger activityLogger)
+    public UserManagementController(IUrbanSyncApiClient api, ActivityLogger activityLogger)
     {
-        _userManager = userManager;
+        _api = api;
         _activityLogger = activityLogger;
     }
 
     public async Task<IActionResult> Index()
     {
-        var users = _userManager.Users.ToList();
-        var result = new List<UserListViewModel>();
+        var users = await _api.GetUsersAsync();
 
-        foreach (var user in users)
+        var result = users.Select(user => new UserListViewModel
         {
-            var roles = await _userManager.GetRolesAsync(user);
-
-            result.Add(new UserListViewModel
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? "",
-                Position = user.Position,
-                IsActive = user.IsActive,
-                Role = roles.FirstOrDefault() ?? "Sin rol"
-            });
-        }
+            Id = user.Id.ToString(),
+            FullName = user.NombreCompleto,
+            Email = user.Email,
+            Role = user.RolNombre,
+            Position = user.RolNombre,
+            IsActive = user.Activo
+        }).ToList();
 
         return View(result);
     }
 
     [HttpGet]
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
+        ViewBag.Roles = await _api.GetRolesAsync();
         return View();
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(UserCreateViewModel model)
     {
+        ViewBag.Roles = await _api.GetRolesAsync();
+
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = new ApplicationUser
+        try
         {
-            UserName = model.Email,
-            Email = model.Email,
-            FullName = model.FullName,
-            IdentificationNumber = model.IdentificationNumber,
-            Position = model.Position,
-            IsActive = true,
-            EmailConfirmed = true
-        };
+            var roles = (IReadOnlyList<ApiRoleDto>)ViewBag.Roles;
+            var role = roles.FirstOrDefault(r => r.Nombre == model.Role);
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+            if (role is null)
+            {
+                ModelState.AddModelError(nameof(model.Role), "Rol no encontrado en la API.");
+                return View(model);
+            }
 
-        if (!result.Succeeded)
+            await _api.CreateUserAsync(new ApiCreateUserRequest
+            {
+                NombreUsuario = model.Email,
+                NombreCompleto = model.FullName,
+                Email = model.Email,
+                Password = model.Password,
+                RolId = role.Id
+            });
+
+            await _activityLogger.LogAsync("Creacion de usuario", $"Se creo el usuario {model.Email} con rol {model.Role}.");
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex)
         {
-            foreach (var error in result.Errors)
-                ModelState.AddModelError("", error.Description);
-
+            ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
         }
-
-        await _userManager.AddToRoleAsync(user, model.Role);
-
-        await _activityLogger.LogAsync(
-            "Creación de usuario",
-            $"Se creó el usuario {user.Email} con rol {model.Role}."
-        );
-
-        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleStatus(string id)
     {
-        var user = await _userManager.FindByIdAsync(id);
+        if (!int.TryParse(id, out var userId))
+            return BadRequest();
 
-        if (user == null)
-            return NotFound();
-
-        user.IsActive = !user.IsActive;
-        await _userManager.UpdateAsync(user);
-
-        await _activityLogger.LogAsync(
-            "Cambio de estado de usuario",
-            $"Se cambió el estado del usuario {user.Email} a {(user.IsActive ? "Activo" : "Inactivo")}."
-        );
+        await _api.ToggleUserStatusAsync(userId);
+        await _activityLogger.LogAsync("Cambio de estado de usuario", $"Se cambio el estado del usuario #{userId}.");
 
         return RedirectToAction(nameof(Index));
     }
