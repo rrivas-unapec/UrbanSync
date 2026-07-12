@@ -1,28 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using UrbanSync.Web.Data;
 
 namespace UrbanSync.Web.Controllers;
 
-[Authorize(Roles = "Administrador,Supervisor")]
+[Authorize(Roles = "Administrador,Supervisor,SupervisorOperaciones")]
 public class ActivityController : Controller
 {
-    private readonly ApplicationDbContext _context;
-
-    public ActivityController(ApplicationDbContext context)
+    public IActionResult Index()
     {
-        _context = context;
-    }
-
-    public async Task<IActionResult> Index()
-    {
-        var activities = await _context.UserActivities
-            .Include(x => x.User)
-            .OrderByDescending(x => x.CreatedAt)
-            .Take(100)
-            .ToListAsync();
-
-        return View(activities);
+        ViewBag.Message = "La auditoria ahora pertenece a la API/BD UrbanSync. Agrega un endpoint de auditoria si quieres listar actividades aqui.";
+        return View(new List<object>());
     }
 }

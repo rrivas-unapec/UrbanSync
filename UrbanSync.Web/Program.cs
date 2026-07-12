@@ -1,58 +1,44 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using UrbanSync.Web.Data;
-using UrbanSync.Web.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using UrbanSync.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+builder.Services.AddHttpContextAccessor();
 
 builder.Services
-    .AddIdentity<ApplicationUser, IdentityRole>(options =>
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        options.Password.RequireDigit = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireNonAlphanumeric = true;
-        options.Password.RequiredLength = 6;
+        options.LoginPath = "/Auth/Login";
+        options.AccessDeniedPath = "/Home/AccessDenied";
+        options.Cookie.Name = "UrbanSync.Web.Auth";
+    });
 
-        options.User.RequireUniqueEmail = true;
-        options.SignIn.RequireConfirmedEmail = false;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.ConfigureApplicationCookie(options =>
+builder.Services.AddHttpClient<IUrbanSyncApiClient, UrbanSyncApiClient>(client =>
 {
-    options.LoginPath = "/Auth/Login";
-    options.AccessDeniedPath = "/Home/AccessDenied";
+    var baseUrl = builder.Configuration["UrbanSyncApi:BaseUrl"]
+        ?? throw new InvalidOperationException("UrbanSyncApi:BaseUrl no esta configurado.");
+
+    client.BaseAddress = new Uri(baseUrl);
 });
 
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ActivityLogger>();
 
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    await SeedData.InitializeAsync(scope.ServiceProvider);
-}
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+        ctx.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
+});
 
 app.UseRouting();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

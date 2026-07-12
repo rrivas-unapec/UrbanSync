@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using UrbanSync.Web.Models;
 using UrbanSync.Web.Services;
 using UrbanSync.Web.ViewModels;
 
@@ -8,17 +9,12 @@ namespace UrbanSync.Web.Controllers;
 
 public class AuthController : Controller
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IUrbanSyncApiClient _api;
     private readonly ActivityLogger _activityLogger;
 
-    public AuthController(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
-        ActivityLogger activityLogger)
+    public AuthController(IUrbanSyncApiClient api, ActivityLogger activityLogger)
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
+        _api = api;
         _activityLogger = activityLogger;
     }
 
@@ -29,35 +25,56 @@ public class AuthController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
-
-        if (user == null || !user.IsActive)
+        try
         {
-            ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+            var response = await _api.LoginAsync(new ApiLoginRequest
+            {
+                Email = model.Email,
+                Password = model.Password
+            });
+
+            if (response is null || string.IsNullOrWhiteSpace(response.Token))
+            {
+                ModelState.AddModelError(string.Empty, "Usuario o contraseña incorrectos.");
+                return View(model);
+            }
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, response.User.Id.ToString()),
+                new(ClaimTypes.Name, response.User.NombreCompleto),
+                new(ClaimTypes.Email, response.User.Email),
+                new(ClaimTypes.Role, response.User.RolNombre),
+                new("access_token", response.Token)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = model.RememberMe,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                });
+
+            await _activityLogger.LogAsync("Inicio de sesion", "El usuario inicio sesion desde el monolito conectado a la API.");
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
         }
-
-        var result = await _signInManager.PasswordSignInAsync(
-            user,
-            model.Password,
-            model.RememberMe,
-            lockoutOnFailure: false
-        );
-
-        if (!result.Succeeded)
-        {
-            ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
-            return View(model);
-        }
-
-        await _activityLogger.LogAsync("Inicio de sesión", "El usuario inició sesión.");
-
-        return RedirectToAction("Index", "Dashboard");
     }
 
     [HttpGet]
@@ -67,46 +84,49 @@ public class AuthController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(RegisterViewModel model)
     {
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = new ApplicationUser
+        try
         {
-            UserName = model.Email,
-            Email = model.Email,
-            FullName = model.FullName,
-            IdentificationNumber = model.IdentificationNumber,
-            Position = "Ciudadano",
-            IsActive = true,
-            EmailConfirmed = true
-        };
+            var roles = await _api.GetRolesAsync();
+            var ciudadanoRole = roles.FirstOrDefault(r => r.Nombre == "Ciudadano");
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+            if (ciudadanoRole is null)
+            {
+                ModelState.AddModelError(string.Empty, "La API no tiene configurado el rol Ciudadano.");
+                return View(model);
+            }
 
-        if (!result.Succeeded)
+            await _api.CreateUserAsync(new ApiCreateUserRequest
+            {
+                NombreUsuario = model.Email,
+                NombreCompleto = model.FullName,
+                Email = model.Email,
+                Password = model.Password,
+                RolId = ciudadanoRole.Id
+            });
+
+            await _activityLogger.LogAsync("Registro", "El usuario se registro como ciudadano desde el monolito conectado a la API.");
+
+            return RedirectToAction(nameof(Login));
+        }
+        catch (Exception ex)
         {
-            foreach (var error in result.Errors)
-                ModelState.AddModelError("", error.Description);
-
+            ModelState.AddModelError(string.Empty, ex.Message);
             return View(model);
         }
-
-        await _userManager.AddToRoleAsync(user, "Ciudadano");
-        await _signInManager.SignInAsync(user, isPersistent: false);
-
-        await _activityLogger.LogAsync("Registro", "El usuario se registró como ciudadano.");
-
-        return RedirectToAction("Index", "Dashboard");
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await _activityLogger.LogAsync("Cierre de sesión", "El usuario cerró sesión.");
-        await _signInManager.SignOutAsync();
-
+        await _activityLogger.LogAsync("Cierre de sesion", "El usuario cerro sesion.");
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return RedirectToAction("Login", "Auth");
     }
 }
