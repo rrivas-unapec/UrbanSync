@@ -1,0 +1,143 @@
+@model PanelPrincipalViewModel
+@{
+    Layout = "_AdminLayout";
+}
+<div class="mb-4">
+    <h1 class="fw-bold mb-1">Panel Principal</h1>
+    <p class="text-muted mb-0">Reportes ciudadanos registrados en UrbanSync.</p>
+</div>
+
+<div class="row g-3 mb-4">
+    @if (Model.DatosDisponibles)
+    {
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body">
+                    <div class="admin-kpi-icon mb-3" style="background-color:rgba(0,87,184,.1); color:#0057B8;">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <p class="fs-3 fw-bold mb-0">@Model.TotalReportes.ToString("N0")</p>
+                    <p class="text-muted small mb-0">Reportes ciudadanos</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body">
+                    <div class="admin-kpi-icon mb-3" style="background-color:rgba(228,87,46,.1); color:#E4572E;">
+                        <i class="bi bi-wrench"></i>
+                    </div>
+                    <p class="fs-3 fw-bold mb-0">@Model.OrdenesActivas.ToString("N0")</p>
+                    <p class="text-muted small mb-0">Órdenes activas</p>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+                <div class="card-body">
+                    <div class="admin-kpi-icon mb-3">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <p class="fs-5 fw-bold mb-0 text-muted">Sin datos disponibles</p>
+                    <p class="text-muted small mb-0">Reportes ciudadanos — la API de UrbanSync no respondió.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+                <div class="card-body">
+                    <div class="admin-kpi-icon mb-3">
+                        <i class="bi bi-wrench"></i>
+                    </div>
+                    <p class="fs-5 fw-bold mb-0 text-muted">Sin datos disponibles</p>
+                    <p class="text-muted small mb-0">Órdenes activas — la API de UrbanSync no respondió.</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+            <div class="card-body">
+                <div class="admin-kpi-icon mb-3">
+                    <i class="bi bi-box-seam"></i>
+                </div>
+                <p class="fs-5 fw-bold mb-0 text-muted">Sin datos</p>
+                <p class="text-muted small mb-0">Activos totales — no existe la entidad "Activos Urbanos" en el dominio.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+            <div class="card-body">
+                <div class="admin-kpi-icon mb-3">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <p class="fs-5 fw-bold mb-0 text-muted">Sin datos</p>
+                <p class="text-muted small mb-0">% operativo — depende de la misma entidad de activos pendiente.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+            <div class="card-body">
+                <div class="admin-kpi-icon mb-3">
+                    <i class="bi bi-clock"></i>
+                </div>
+                <p class="fs-5 fw-bold mb-0 text-muted">Sin datos</p>
+                <p class="text-muted small mb-0">Tiempo de resolución promedio — GET /api/reports/summary no expone la duración entre fechaReporte y fechaCierre.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 admin-kpi-pending">
+            <div class="card-body">
+                <div class="admin-kpi-icon mb-3">
+                    <i class="bi bi-bar-chart"></i>
+                </div>
+                <p class="fs-5 fw-bold mb-0 text-muted">Sin datos</p>
+                <p class="text-muted small mb-0">Presupuesto ejecutado — no existe entidad de presupuesto en el dominio.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h3 class="fw-bold fs-6 mb-1">Reportes vs. resueltos esta semana</h3>
+                <div class="admin-chart-empty">
+                    <i class="bi bi-bar-chart-line fs-2"></i>
+                    <p class="small mb-0">
+                        Sin datos — GET /api/reports/summary no trae una serie por día, solo totales acumulados.
+                        Falta un endpoint agrupado por fecha (ej. porDia) para graficar esto con Chart.js.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h3 class="fw-bold fs-6 mb-1">Tendencia mensual</h3>
+                <div class="admin-chart-empty">
+                    <i class="bi bi-graph-up-arrow fs-2"></i>
+                    <p class="small mb-0">
+                        Sin datos — falta un endpoint agrupado por mes y tipo de incidencia
+                        (ej. porMes) para graficar esto con Chart.js.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

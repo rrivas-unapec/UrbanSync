@@ -1,0 +1,87 @@
+@model RutasViewModel
+@{
+    Layout = "_AdminLayout";
+    var cuadrillasActivas = Model.Cuadrillas.Count(c => c.EnProgreso > 0 || c.Pendientes > 0);
+    var ordenesEnCurso = Model.Cuadrillas.Sum(c => c.EnProgreso);
+}
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="fw-bold mb-1">Rutas de cuadrillas</h1>
+        @if (Model.DatosDisponibles)
+        {
+            <p class="text-muted mb-0">@cuadrillasActivas cuadrilla@(cuadrillasActivas == 1 ? "" : "s") activa@(cuadrillasActivas == 1 ? "" : "s") · @ordenesEnCurso orden@(ordenesEnCurso == 1 ? "" : "es") en curso</p>
+        }
+    </div>
+
+    <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-title="Próximamente">
+        <button type="button" class="btn btn-dark" disabled style="pointer-events:none;">
+            <i class="bi bi-arrow-repeat"></i> Recalcular rutas
+        </button>
+    </span>
+</div>
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else if (Model.Cuadrillas.Count == 0)
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-people fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1">No hay cuadrillas</h3>
+            <p class="text-muted mb-0">Todavía no hay órdenes de trabajo asignadas a ningún técnico.</p>
+        </div>
+    </div>
+}
+else
+{
+    <p class="text-muted small mb-3">
+        No existe una entidad de "cuadrilla" en el dominio — cada tarjeta agrupa las órdenes de trabajo reales por técnico asignado.
+    </p>
+    <div class="row g-3">
+        @foreach (var cuadrilla in Model.Cuadrillas)
+        {
+            var estadoBadge = cuadrilla.Estado switch
+            {
+                "Trabajo en curso" => "bg-primary",
+                "Pendiente de iniciar" => "bg-secondary",
+                _ => "bg-light text-dark"
+            };
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <p class="fw-bold mb-0">@cuadrilla.Tecnico</p>
+                                <p class="text-muted small mb-0">@cuadrilla.TotalOrdenes orden@(cuadrilla.TotalOrdenes == 1 ? "" : "es") asignada@(cuadrilla.TotalOrdenes == 1 ? "" : "s")</p>
+                            </div>
+                            <span class="badge @estadoBadge">@cuadrilla.Estado</span>
+                        </div>
+                        <div class="d-flex gap-3 small text-muted">
+                            <span><span class="badge bg-secondary">@cuadrilla.Pendientes</span> Pendientes</span>
+                            <span><span class="badge bg-primary">@cuadrilla.EnProgreso</span> En progreso</span>
+                            <span><span class="badge bg-success">@cuadrilla.Finalizadas</span> Finalizadas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+                new bootstrap.Tooltip(el);
+            });
+        });
+    </script>
+}
