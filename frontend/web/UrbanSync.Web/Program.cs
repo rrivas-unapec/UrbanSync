@@ -46,4 +46,11 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
+app.MapGet("/health", () => Results.Ok(new
+{
+    application = "UrbanSync Web",
+    status = "healthy",
+    timestamp = DateTime.UtcNow
+}));
+
 app.Run();
