@@ -22,12 +22,13 @@ publish/
 
 TestResults/
 
-# Flutter/Dart build artifacts (mobile/)
-mobile/.dart_tool/
-mobile/build/
-mobile/.flutter-plugins-dependencies
-mobile/android/.gradle/
-mobile/android/local.properties
-mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-mobile/ios/Flutter/
-mobile/ios/Runner/GeneratedPluginRegistrant.*
+# Flutter/Dart build artifacts
+src/mobile/.dart_tool/
+src/mobile/build/
+src/mobile/.flutter-plugins
+src/mobile/.flutter-plugins-dependencies
+src/mobile/android/.gradle/
+src/mobile/android/local.properties
+src/mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+src/mobile/ios/Flutter/
+src/mobile/ios/Runner/GeneratedPluginRegistrant.*

@@ -3,7 +3,7 @@
 App móvil (Flutter) + API (ASP.NET Core) para que ciudadanos reporten incidencias en la infraestructura pública, los gestores las analicen y asignen según **tipo** y **jurisdicción**, los técnicos las resuelvan con evidencias, y se generen indicadores.
 
 - **`mobile/`** — App Flutter (Riverpod, go_router, dio, flutter_map, fl_chart).
-- **`backend/`** — API + web MVC (ASP.NET Core 8, EF Core, Identity + JWT, SQL Server). Extiende el repo [rrivas-unapec/UrbanSync](https://github.com/rrivas-unapec/UrbanSync) añadiéndole una capa de API JSON bajo `/api`.
+- **`src/backend/`** — API + web MVC (ASP.NET Core 8, EF Core, Identity + JWT, SQL Server). Extiende el repo [rrivas-unapec/UrbanSync](https://github.com/rrivas-unapec/UrbanSync) añadiéndole una capa de API JSON bajo `/api`.
 - **`docker-compose.yml`** — Levanta SQL Server + la API.
 - **`*.sql`** — Scripts de referencia del dominio (traducidos a entidades EF; no se ejecutan directamente).
 
@@ -76,7 +76,7 @@ Registro → login → **reportar incidencia** (GPS + foto) → (gestor) **triag
 
 ## 3. Arquitectura
 
-### Backend (`backend/UrbanSync.Web`)
+### Backend (`src/web/UrbanSync.Web`)
 - **Web MVC + Identity (cookies)** original del repo, intacto.
 - **Capa API nueva** en `Controllers/Api/*` con `[ApiController]` + **JWT** (`[Authorize(AuthenticationSchemes = JwtBearer)]`). Esquema dual: cookies para la web, JWT para `/api`.
 - **Dominio** (`Domain/*`): `Jurisdiccion, Institucion, TipoIncidencia, Ubicacion, Incidencia, Evidencia, AnalisisTecnico, Trabajo` — traducido de los scripts SQL a entidades EF Core (provider **SQL Server**).
