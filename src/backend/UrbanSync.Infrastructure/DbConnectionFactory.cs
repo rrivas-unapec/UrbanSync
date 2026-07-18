@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace UrbanSync.DataAccess
+namespace UrbanSync.Infrastructure
 {
 
     public interface IDbConnectionFactory

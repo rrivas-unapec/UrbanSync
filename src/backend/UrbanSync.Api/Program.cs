@@ -1,6 +1,7 @@
-using UrbanSync.Business.Services;
-using UrbanSync.DataAccess;
-using UrbanSync.DataAccess.Repositories;
+using UrbanSync.Application.Services;
+using UrbanSync.Infrastructure;
+using UrbanSync.Infrastructure.Repositories;
+using UrbanSync.Application.Common.Interfaces.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,11 +20,11 @@ builder.Services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory(conn
 
 
 
-// Repositories (DataAccess)
+// Repositories (Infrastructure)
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
-// Services (Business)
+// Services (Application)
 builder.Services.AddScoped<IRolService, RolService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 

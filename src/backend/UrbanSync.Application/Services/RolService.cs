@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UrbanSync.DataAccess.Repositories;
+using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Domain.DTOs;
 using UrbanSync.Domain.Entities;
 
-namespace UrbanSync.Business.Services
+namespace UrbanSync.Application.Services
 {
     public class RolService : IRolService
     {

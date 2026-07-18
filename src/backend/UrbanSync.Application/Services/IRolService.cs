@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UrbanSync.Domain.DTOs;
 
-namespace UrbanSync.Business.Services
+namespace UrbanSync.Application.Services
 {
     public interface IRolService
     {

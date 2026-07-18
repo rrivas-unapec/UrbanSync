@@ -1,7 +1,8 @@
 ﻿using Microsoft.Data.SqlClient;
 using UrbanSync.Domain.Entities;
+using UrbanSync.Application.Common.Interfaces.Persistence;
 
-namespace UrbanSync.DataAccess.Repositories
+namespace UrbanSync.Infrastructure.Repositories
 {
     public class UsuarioRepository : IUsuarioRepository
     {

@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UrbanSync.DataAccess\UrbanSync.DataAccess.csproj" />
     <ProjectReference Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
   </ItemGroup>
 

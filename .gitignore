@@ -32,3 +32,6 @@ src/mobile/android/local.properties
 src/mobile/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
 src/mobile/ios/Flutter/
 src/mobile/ios/Runner/GeneratedPluginRegistrant.*
+
+# Local development configuration
+src/backend/UrbanSync.Api/appsettings.Development.json

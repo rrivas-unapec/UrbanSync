@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UrbanSync.Business\UrbanSync.Business.csproj" />
-    <ProjectReference Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
+    <ProjectReference Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
+    <ProjectReference Include="..\UrbanSync.Infrastructure\UrbanSync.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

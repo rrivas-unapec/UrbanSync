@@ -1,9 +1,9 @@
-﻿using UrbanSync.Business.Helpers;
-using UrbanSync.DataAccess.Repositories;
+﻿using UrbanSync.Application.Helpers;
+using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Domain.DTOs;
 using UrbanSync.Domain.Entities;
 
-namespace UrbanSync.Business.Services
+namespace UrbanSync.Application.Services
 {
     public class UsuarioService : IUsuarioService
     {

@@ -1,6 +1,6 @@
 using UrbanSync.Domain.DTOs;
 
-namespace UrbanSync.Business.Services
+namespace UrbanSync.Application.Services
 {
     public interface IUsuarioService
     {

@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace UrbanSync.Business.Helpers
+namespace UrbanSync.Application.Helpers
 {
     public static class PasswordHasher
     {

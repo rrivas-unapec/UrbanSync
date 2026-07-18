@@ -1,6 +1,6 @@
 using UrbanSync.Domain.Entities;
 
-namespace UrbanSync.DataAccess.Repositories
+namespace UrbanSync.Application.Common.Interfaces.Persistence
 {
     public interface IUsuarioRepository
     {
