@@ -1,29 +1,34 @@
 using Microsoft.AspNetCore.Mvc;
-using UrbanSync.Application.Services;
-using UrbanSync.Domain.DTOs;
+using UrbanSync.Application.Features.Authentication;
+using UrbanSync.Application.Features.Users;
 
-namespace UrbanSync.Api.Controllers
+namespace UrbanSync.Api.Controllers;
+
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/auth")]
-    public class AuthController : ControllerBase
+    private readonly IUsuarioService _usuarioService;
+
+    public AuthController(IUsuarioService usuarioService)
     {
-        private readonly IUsuarioService _usuarioService;
+        _usuarioService = usuarioService;
+    }
 
-        public AuthController(IUsuarioService usuarioService)
+    [HttpPost("login")]
+    public async Task<ActionResult<LoginResponseDto>> Login(
+        [FromBody] LoginRequestDto dto)
+    {
+        var response = await _usuarioService.LoginAsync(dto);
+
+        if (response is null)
         {
-            _usuarioService = usuarioService;
+            return Unauthorized(new
+            {
+                mensaje = "Usuario o contraseña incorrectos."
+            });
         }
 
-        [HttpPost("login")]
-        public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginRequestDto dto)
-        {
-            var response = await _usuarioService.LoginAsync(dto);
-
-            if (response is null)
-                return Unauthorized(new { mensaje = "Usuario o contraseña incorrectos." });
-
-            return Ok(response);
-        }
+        return Ok(response);
     }
 }

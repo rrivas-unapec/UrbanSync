@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using UrbanSync.Application.Services;
-using UrbanSync.Domain.DTOs;
+using UrbanSync.Application.Features.Roles;
 
 namespace UrbanSync.Api.Controllers
 {

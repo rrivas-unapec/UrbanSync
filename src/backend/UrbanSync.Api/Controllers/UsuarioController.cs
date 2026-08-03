@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using UrbanSync.Domain.DTOs;
-using UrbanSync.Application.Services;
+using UrbanSync.Application.Features.Users;
 
-namespace UrbanSync.API.Controllers
+namespace UrbanSync.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
