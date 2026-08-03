@@ -1,45 +1,93 @@
 using Microsoft.AspNetCore.Mvc;
+using UrbanSync.Api.Contracts.Roles;
 using UrbanSync.Application.Features.Roles;
 
-namespace UrbanSync.Api.Controllers
+namespace UrbanSync.Api.Controllers;
+
+[ApiController]
+[Route("api/roles")]
+public sealed class RolesController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class RolesController : ControllerBase
+    private readonly IRolService _rolService;
+
+    public RolesController(IRolService rolService)
     {
-        private readonly IRolService _rolService;
+        _rolService = rolService;
+    }
 
-        public RolesController(IRolService rolService)
+    [HttpGet]
+    [ProducesResponseType<IEnumerable<RoleResponse>>(
+        StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<RoleResponse>>> GetAll()
+    {
+        var roles = await _rolService.GetAllAsync();
+
+        return Ok(roles.Select(MapRole));
+    }
+
+    [HttpGet("{id:int}")]
+    [ProducesResponseType<RoleResponse>(
+        StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RoleResponse>> GetById(int id)
+    {
+        var role = await _rolService.GetByIdAsync(id);
+
+        if (role is null)
         {
-            _rolService = rolService;
+            return NotFound(CreateNotFoundProblem(
+                $"No se encontró ningún rol con el ID {id}."));
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var roles = await _rolService.GetAllAsync();
-            return Ok(roles);
-        }
+        return Ok(MapRole(role));
+    }
 
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var rol = await _rolService.GetByIdAsync(id);
-            return rol is null ? NotFound() : Ok(rol);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] RolCreateDto dto)
-        {
-            try
+    [HttpPost]
+    [ProducesResponseType<RoleResponse>(
+        StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(
+        StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RoleResponse>> Create(
+        [FromBody] CreateRoleRequest request)
+    {
+        var createdRole = await _rolService.CreateAsync(
+            new RolCreateDto
             {
-                var creado = await _rolService.CreateAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = creado.Id }, creado);
-            }
-            catch (ArgumentException ex)
+                Nombre = request.Nombre.Trim(),
+                Descripcion = request.Descripcion?.Trim()
+            });
+
+        var response = MapRole(createdRole);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = response.Id },
+            response);
+    }
+
+    private static RoleResponse MapRole(RolDto role)
+    {
+        return new RoleResponse
+        {
+            Id = role.Id,
+            Nombre = role.Nombre,
+            Descripcion = role.Descripcion
+        };
+    }
+
+    private ProblemDetails CreateNotFoundProblem(string detail)
+    {
+        return new ProblemDetails
+        {
+            Status = StatusCodes.Status404NotFound,
+            Title = "Recurso no encontrado",
+            Detail = detail,
+            Instance = HttpContext.Request.Path,
+            Extensions =
             {
-                return BadRequest(new { mensaje = ex.Message });
+                ["traceId"] = HttpContext.TraceIdentifier
             }
-        }
+        };
     }
 }
