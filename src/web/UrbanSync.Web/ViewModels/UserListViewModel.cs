@@ -1,16 +1,14 @@
 namespace UrbanSync.Web.ViewModels;
 
-public class UserListViewModel
+public sealed class UserListViewModel
 {
-    public string Id { get; set; } = string.Empty;
+    public int Id { get; set; }
 
     public string FullName { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;
 
     public string Role { get; set; } = string.Empty;
-
-    public string Position { get; set; } = string.Empty;
 
     public bool IsActive { get; set; }
 }

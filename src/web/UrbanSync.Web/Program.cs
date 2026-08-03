@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using UrbanSync.Web.Extensions;
-using UrbanSync.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +27,7 @@ builder.Services
 builder.Services.AddUrbanSyncApiClients(
     builder.Configuration);
 
-builder.Services.AddScoped<ActivityLogger>();
+builder.Services.AddPresentationServices();
 
 var app = builder.Build();
 

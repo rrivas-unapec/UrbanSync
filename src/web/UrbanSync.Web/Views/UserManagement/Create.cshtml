@@ -1,53 +1,102 @@
-@model UserCreateViewModel
-@{
-    var roles = ViewBag.Roles as IReadOnlyList<ApiRoleDto> ?? Array.Empty<ApiRoleDto>();
-}
+@model UserCreatePageViewModel
+
 <h2>Crear usuario</h2>
+
 <div class="card shadow-sm">
     <div class="card-body">
         <form asp-action="Create" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-            <div class="mb-3">
-                <label asp-for="FullName" class="form-label">Nombre completo</label>
-                <input asp-for="FullName" class="form-control" />
-                <span asp-validation-for="FullName" class="text-danger"></span>
+            <div
+                asp-validation-summary="ModelOnly"
+                class="text-danger mb-3">
             </div>
+
             <div class="mb-3">
-                <label asp-for="IdentificationNumber" class="form-label">Cédula</label>
-                <input asp-for="IdentificationNumber" class="form-control" />
-                <span asp-validation-for="IdentificationNumber" class="text-danger"></span>
+                <label
+                    asp-for="Form.FullName"
+                    class="form-label">
+                </label>
+
+                <input
+                    asp-for="Form.FullName"
+                    class="form-control" />
+
+                <span
+                    asp-validation-for="Form.FullName"
+                    class="text-danger">
+                </span>
             </div>
+
             <div class="mb-3">
-                <label asp-for="Email" class="form-label">Correo</label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+                <label
+                    asp-for="Form.Email"
+                    class="form-label">
+                </label>
+
+                <input
+                    asp-for="Form.Email"
+                    class="form-control" />
+
+                <span
+                    asp-validation-for="Form.Email"
+                    class="text-danger">
+                </span>
             </div>
+
             <div class="mb-3">
-                <label asp-for="Position" class="form-label">Cargo</label>
-                <input asp-for="Position" class="form-control" />
-                <span asp-validation-for="Position" class="text-danger"></span>
-            </div>
-            <div class="mb-3">
-                <label asp-for="Role" class="form-label">Rol</label>
-                <select asp-for="Role" class="form-select">
-                    <option value="">Seleccione un rol</option>
-                    @foreach (var role in roles)
+                <label
+                    asp-for="Form.RoleId"
+                    class="form-label">
+                </label>
+
+                <select
+                    asp-for="Form.RoleId"
+                    class="form-select">
+
+                    <option value="0">
+                        Seleccione un rol
+                    </option>
+
+                    @foreach (var role in Model.Roles)
                     {
-                        <option value="@role.Nombre">@role.Nombre</option>
+                        <option value="@role.Id">
+                            @role.Name
+                        </option>
                     }
                 </select>
-                <span asp-validation-for="Role" class="text-danger"></span>
+
+                <span
+                    asp-validation-for="Form.RoleId"
+                    class="text-danger">
+                </span>
             </div>
+
             <div class="mb-3">
-                <label asp-for="Password" class="form-label">Contraseña temporal</label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
+                <label
+                    asp-for="Form.Password"
+                    class="form-label">
+                </label>
+
+                <input
+                    asp-for="Form.Password"
+                    class="form-control" />
+
+                <span
+                    asp-validation-for="Form.Password"
+                    class="text-danger">
+                </span>
             </div>
-            <button class="btn btn-dark">Guardar</button>
-            <a asp-action="Index" class="btn btn-secondary">Volver</a>
+
+            <button type="submit" class="btn btn-dark">
+                Guardar
+            </button>
+
+            <a asp-action="Index" class="btn btn-secondary">
+                Volver
+            </a>
         </form>
     </div>
 </div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
