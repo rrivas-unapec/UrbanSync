@@ -1,24 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+
     <PackageReference
-      Include="Microsoft.Extensions.Configuration.Abstractions"
-      Version="8.0.0" />
+      Include="Microsoft.Extensions.Configuration.Abstractions" />
+
     <PackageReference
-      Include="Microsoft.Extensions.DependencyInjection.Abstractions"
-      Version="8.0.2" />
+      Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
-    <ProjectReference Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
+    <ProjectReference
+      Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
+
+    <ProjectReference
+      Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
   </ItemGroup>
 
 </Project>
