@@ -1,6 +1,6 @@
 ﻿using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Application.Features.Authentication;
-using UrbanSync.Application.Helpers;
+using UrbanSync.Application.Common.Interfaces.Authentication;
 using UrbanSync.Domain.Entities;
 
 namespace UrbanSync.Application.Features.Users;
@@ -9,13 +9,16 @@ public class UsuarioService : IUsuarioService
 {
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
+    private readonly IPasswordHasher _passwordHasher;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
-        IRolRepository rolRepository)
+        IRolRepository rolRepository,
+        IPasswordHasher passwordHasher)
     {
         _usuarioRepository = usuarioRepository;
         _rolRepository = rolRepository;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<IEnumerable<UsuarioDto>> GetAllAsync()
@@ -71,7 +74,7 @@ public class UsuarioService : IUsuarioService
                 nameof(dto));
         }
 
-        var (hash, salt) = PasswordHasher.Hash(dto.Password);
+        var (hash, salt) = _passwordHasher.Hash(dto.Password);
 
         var usuario = new Usuario
         {
@@ -98,7 +101,7 @@ public class UsuarioService : IUsuarioService
             return null;
         }
 
-        var isValidPassword = PasswordHasher.Verify(
+        var isValidPassword = _passwordHasher.Verify(
             dto.Password,
             usuario.PasswordHash,
             usuario.PasswordSalt);
