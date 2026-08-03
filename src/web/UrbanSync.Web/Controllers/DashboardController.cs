@@ -1,186 +1,366 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using UrbanSync.Web.ApiClients.Common;
+using UrbanSync.Web.ApiClients.Incidents;
+using UrbanSync.Web.ApiClients.Reports;
+using UrbanSync.Web.ApiClients.WorkOrders;
 using UrbanSync.Web.Services;
 using UrbanSync.Web.ViewModels;
 
 namespace UrbanSync.Web.Controllers;
 
 [Authorize]
-public class DashboardController : Controller
+public sealed class DashboardController : Controller
 {
-    private static readonly string[] EstadosActivos = ["Registrada", "EnAnalisis", "Asignada", "EnProceso"];
-    private static readonly string[] PaletaTipos = ["#0057B8", "#00A676", "#FFB800", "#E4572E", "#7C3AED"];
-    private static readonly Dictionary<string, string> AccionesModeracion = new()
-    {
-        ["aprobar"] = "asignar",
-        ["rechazar"] = "rechazar"
-    };
+    private static readonly string[] EstadosActivos =
+    [
+        "Registrada",
+        "EnAnalisis",
+        "Asignada",
+        "EnProceso"
+    ];
 
-    private readonly IUrbanSyncApiClient _api;
+    private static readonly string[] PaletaTipos =
+    [
+        "#0057B8",
+        "#00A676",
+        "#FFB800",
+        "#E4572E",
+        "#7C3AED"
+    ];
+
+    private static readonly Dictionary<string, string> AccionesModeracion =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["aprobar"] = "asignar",
+            ["rechazar"] = "rechazar"
+        };
+
     private readonly ActivityLogger _activityLogger;
     private readonly ILogger<DashboardController> _logger;
+    private readonly IReportsApiClient _reportsApiClient;
+    private readonly IIncidentsApiClient _incidentsApiClient;
+    private readonly IWorkOrdersApiClient _workOrdersApiClient;
 
-    public DashboardController(IUrbanSyncApiClient api, ActivityLogger activityLogger, ILogger<DashboardController> logger)
+    public DashboardController(
+        IReportsApiClient reportsApiClient,
+        IIncidentsApiClient incidentsApiClient,
+        IWorkOrdersApiClient workOrdersApiClient,
+        ActivityLogger activityLogger,
+        ILogger<DashboardController> logger)
     {
-        _api = api;
+        _reportsApiClient = reportsApiClient;
+        _incidentsApiClient = incidentsApiClient;
+        _workOrdersApiClient = workOrdersApiClient;
         _activityLogger = activityLogger;
         _logger = logger;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(
+        CancellationToken cancellationToken)
     {
         if (User.IsInRole("Administrador"))
         {
-            var model = await BuildPanelPrincipalAsync();
+            var model = await BuildPanelPrincipalAsync(
+                cancellationToken);
+
             return View("Administrador", model);
         }
 
-        if (User.IsInRole("Supervisor") || User.IsInRole("SupervisorOperaciones"))
+        if (User.IsInRole("Supervisor") ||
+            User.IsInRole("SupervisorOperaciones"))
+        {
             return View("Supervisor");
+        }
 
-        if (User.IsInRole("Tecnico") || User.IsInRole("AnalistaTecnico"))
+        if (User.IsInRole("Tecnico") ||
+            User.IsInRole("AnalistaTecnico"))
+        {
             return View("Tecnico");
+        }
 
         return View("Ciudadano");
     }
 
-    private async Task<PanelPrincipalViewModel> BuildPanelPrincipalAsync()
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> Mapa(
+        CancellationToken cancellationToken)
+    {
+        var model = await BuildMapaAsync(cancellationToken);
+
+        return View(model);
+    }
+
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> ActivosOrdenes(
+        CancellationToken cancellationToken)
+    {
+        var model = await BuildActivosOrdenesAsync(
+            cancellationToken);
+
+        return View(model);
+    }
+
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> Rutas(
+        CancellationToken cancellationToken)
+    {
+        var model = await BuildRutasAsync(cancellationToken);
+
+        return View(model);
+    }
+
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> Moderacion(
+        CancellationToken cancellationToken)
+    {
+        var model = await BuildModeracionAsync(
+            cancellationToken);
+
+        return View(model);
+    }
+
+    [Authorize(Roles = "Administrador")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ModeracionAccion(
+        int id,
+        string accion,
+        CancellationToken cancellationToken)
+    {
+        if (!AccionesModeracion.TryGetValue(
+                accion,
+                out var accionApi))
+        {
+            return BadRequest();
+        }
+
+        try
+        {
+            await _incidentsApiClient.TriageAsync(
+                id,
+                new TriageIncidentRequest
+                {
+                    Accion = accionApi
+                },
+                cancellationToken);
+
+            await _activityLogger.LogAsync(
+                "Moderación de reporte",
+                $"Se aplicó la acción '{accion}' al reporte #{id}.");
+        }
+        catch (UrbanSyncApiException exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "La API rechazó la acción {Accion} para el reporte {Id}.",
+                accion,
+                id);
+
+            TempData["ModeracionError"] = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "No se pudo aplicar la acción {Accion} al reporte {Id}.",
+                accion,
+                id);
+
+            TempData["ModeracionError"] =
+                "No se pudo comunicar con la API de UrbanSync. Intenta de nuevo.";
+        }
+
+        return RedirectToAction(nameof(Moderacion));
+    }
+
+    private async Task<PanelPrincipalViewModel>
+        BuildPanelPrincipalAsync(
+            CancellationToken cancellationToken)
     {
         try
         {
-            var summary = await _api.GetReportsSummaryAsync();
+            var summary = await _reportsApiClient.GetSummaryAsync(
+                cancellationToken);
 
             return new PanelPrincipalViewModel
             {
                 DatosDisponibles = true,
                 TotalReportes = summary?.Total ?? 0,
                 OrdenesActivas = summary?.PorEstado
-                    .Where(e => EstadosActivos.Contains(e.Clave))
-                    .Sum(e => e.Total) ?? 0
+                    .Where(estado =>
+                        EstadosActivos.Contains(
+                            estado.Clave,
+                            StringComparer.OrdinalIgnoreCase))
+                    .Sum(estado => estado.Total) ?? 0
             };
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "No se pudo obtener el resumen de reportes desde la API de UrbanSync.");
-            return new PanelPrincipalViewModel { DatosDisponibles = false };
+            _logger.LogWarning(
+                exception,
+                "No se pudo obtener el resumen de reportes desde la API de UrbanSync.");
+
+            return new PanelPrincipalViewModel
+            {
+                DatosDisponibles = false
+            };
         }
     }
 
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Mapa()
-    {
-        var model = await BuildMapaAsync();
-        return View(model);
-    }
-
-    private async Task<MapaViewModel> BuildMapaAsync()
+    private async Task<MapaViewModel> BuildMapaAsync(
+        CancellationToken cancellationToken)
     {
         try
         {
-            var incidentes = await _api.GetIncidentsAsync();
+            var incidentes = await _incidentsApiClient.GetAllAsync(
+                cancellationToken: cancellationToken);
 
             var tipos = incidentes
-                .Select(i => i.TipoIncidencia)
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Distinct()
-                .OrderBy(t => t)
+                .Select(incidente => incidente.TipoIncidencia)
+                .Where(tipo => !string.IsNullOrWhiteSpace(tipo))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(tipo => tipo)
                 .ToList();
 
             var colorPorTipo = tipos
-                .Select((tipo, index) => (tipo, color: PaletaTipos[index % PaletaTipos.Length]))
-                .ToDictionary(x => x.tipo, x => x.color);
+                .Select((tipo, index) => new
+                {
+                    Tipo = tipo,
+                    Color = PaletaTipos[index % PaletaTipos.Length]
+                })
+                .ToDictionary(
+                    item => item.Tipo,
+                    item => item.Color,
+                    StringComparer.OrdinalIgnoreCase);
 
             var puntos = incidentes
-                .Where(i => i.Latitud.HasValue && i.Longitud.HasValue)
-                .Select(i => new IncidentMapPointViewModel
-                {
-                    Id = i.Id,
-                    Lat = i.Latitud!.Value,
-                    Lng = i.Longitud!.Value,
-                    CodigoCaso = i.CodigoCaso,
-                    TipoIncidencia = i.TipoIncidencia,
-                    Prioridad = i.Prioridad,
-                    Direccion = i.Direccion,
-                    Color = colorPorTipo.GetValueOrDefault(i.TipoIncidencia, PaletaTipos[0])
-                })
+                .Where(incidente =>
+                    incidente.Latitud.HasValue &&
+                    incidente.Longitud.HasValue)
+                .Select(incidente =>
+                    new IncidentMapPointViewModel
+                    {
+                        Id = incidente.Id,
+                        Lat = incidente.Latitud!.Value,
+                        Lng = incidente.Longitud!.Value,
+                        CodigoCaso = incidente.CodigoCaso,
+                        TipoIncidencia = incidente.TipoIncidencia,
+                        Prioridad = incidente.Prioridad,
+                        Direccion = incidente.Direccion,
+                        Color = colorPorTipo.GetValueOrDefault(
+                            incidente.TipoIncidencia,
+                            PaletaTipos[0])
+                    })
                 .ToList();
 
             return new MapaViewModel
             {
                 DatosDisponibles = true,
-                Tipos = tipos.Select(t => new MapaTipoViewModel { Nombre = t, Color = colorPorTipo[t] }).ToList(),
+                Tipos = tipos
+                    .Select(tipo => new MapaTipoViewModel
+                    {
+                        Nombre = tipo,
+                        Color = colorPorTipo[tipo]
+                    })
+                    .ToList(),
                 Puntos = puntos
             };
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "No se pudo obtener las incidencias para el mapa desde la API de UrbanSync.");
-            return new MapaViewModel { DatosDisponibles = false };
+            _logger.LogWarning(
+                exception,
+                "No se pudieron obtener las incidencias para el mapa desde la API de UrbanSync.");
+
+            return new MapaViewModel
+            {
+                DatosDisponibles = false
+            };
         }
     }
 
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> ActivosOrdenes()
-    {
-        var model = await BuildActivosOrdenesAsync();
-        return View(model);
-    }
-
-    private async Task<ActivosOrdenesViewModel> BuildActivosOrdenesAsync()
+    private async Task<ActivosOrdenesViewModel>
+        BuildActivosOrdenesAsync(
+            CancellationToken cancellationToken)
     {
         try
         {
-            var ordenes = await _api.GetWorkOrdersAsync();
+            var ordenes = await _workOrdersApiClient.GetAllAsync(
+                cancellationToken);
 
             return new ActivosOrdenesViewModel
             {
                 DatosDisponibles = true,
-                Ordenes = ordenes.Select(o => new WorkOrderItemViewModel
-                {
-                    Id = o.Id,
-                    CodigoCaso = o.CodigoCaso,
-                    DescripcionTrabajo = o.DescripcionTrabajo,
-                    UsuarioAsignado = o.UsuarioAsignado,
-                    Estado = o.Estado,
-                    FechaInicio = o.FechaInicio,
-                    FechaFin = o.FechaFin,
-                    Resultado = o.Resultado
-                }).ToList()
+                Ordenes = ordenes
+                    .Select(orden => new WorkOrderItemViewModel
+                    {
+                        Id = orden.Id,
+                        CodigoCaso = orden.CodigoCaso,
+                        DescripcionTrabajo =
+                            orden.DescripcionTrabajo,
+                        UsuarioAsignado =
+                            orden.UsuarioAsignado,
+                        Estado = orden.Estado,
+                        FechaInicio = orden.FechaInicio,
+                        FechaFin = orden.FechaFin,
+                        Resultado = orden.Resultado
+                    })
+                    .ToList()
             };
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "No se pudo obtener las ordenes de trabajo desde la API de UrbanSync.");
-            return new ActivosOrdenesViewModel { DatosDisponibles = false };
+            _logger.LogWarning(
+                exception,
+                "No se pudieron obtener las órdenes de trabajo desde la API de UrbanSync.");
+
+            return new ActivosOrdenesViewModel
+            {
+                DatosDisponibles = false
+            };
         }
     }
 
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Rutas()
-    {
-        var model = await BuildRutasAsync();
-        return View(model);
-    }
-
-    private async Task<RutasViewModel> BuildRutasAsync()
+    private async Task<RutasViewModel> BuildRutasAsync(
+        CancellationToken cancellationToken)
     {
         try
         {
-            var ordenes = await _api.GetWorkOrdersAsync();
+            var ordenes = await _workOrdersApiClient.GetAllAsync(
+                cancellationToken);
 
             var cuadrillas = ordenes
-                .Where(o => !string.IsNullOrWhiteSpace(o.UsuarioAsignado))
-                .GroupBy(o => o.UsuarioAsignado)
-                .Select(g =>
+                .Where(orden =>
+                    !string.IsNullOrWhiteSpace(
+                        orden.UsuarioAsignado))
+                .GroupBy(
+                    orden => orden.UsuarioAsignado,
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(grupo =>
                 {
-                    var pendientes = g.Count(o => o.Estado == "Pendiente");
-                    var enProgreso = g.Count(o => o.Estado == "EnProgreso");
-                    var finalizadas = g.Count(o => o.Estado == "Finalizado");
+                    var pendientes = grupo.Count(orden =>
+                        string.Equals(
+                            orden.Estado,
+                            "Pendiente",
+                            StringComparison.OrdinalIgnoreCase));
+
+                    var enProgreso = grupo.Count(orden =>
+                        string.Equals(
+                            orden.Estado,
+                            "EnProgreso",
+                            StringComparison.OrdinalIgnoreCase));
+
+                    var finalizadas = grupo.Count(orden =>
+                        string.Equals(
+                            orden.Estado,
+                            "Finalizado",
+                            StringComparison.OrdinalIgnoreCase));
 
                     return new CuadrillaViewModel
                     {
-                        Tecnico = g.Key,
-                        TotalOrdenes = g.Count(),
+                        Tecnico = grupo.Key,
+                        TotalOrdenes = grupo.Count(),
                         Pendientes = pendientes,
                         EnProgreso = enProgreso,
                         Finalizadas = finalizadas,
@@ -191,74 +371,74 @@ public class DashboardController : Controller
                                 : "Sin trabajo activo"
                     };
                 })
-                .OrderByDescending(c => c.EnProgreso)
-                .ThenByDescending(c => c.Pendientes)
+                .OrderByDescending(cuadrilla =>
+                    cuadrilla.EnProgreso)
+                .ThenByDescending(cuadrilla =>
+                    cuadrilla.Pendientes)
                 .ToList();
 
-            return new RutasViewModel { DatosDisponibles = true, Cuadrillas = cuadrillas };
+            return new RutasViewModel
+            {
+                DatosDisponibles = true,
+                Cuadrillas = cuadrillas
+            };
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "No se pudo obtener las ordenes de trabajo para agrupar cuadrillas desde la API de UrbanSync.");
-            return new RutasViewModel { DatosDisponibles = false };
+            _logger.LogWarning(
+                exception,
+                "No se pudieron obtener las órdenes para agrupar las cuadrillas.");
+
+            return new RutasViewModel
+            {
+                DatosDisponibles = false
+            };
         }
     }
 
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> Moderacion()
-    {
-        var model = await BuildModeracionAsync();
-        return View(model);
-    }
-
-    [Authorize(Roles = "Administrador")]
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ModeracionAccion(int id, string accion)
-    {
-        if (!AccionesModeracion.TryGetValue(accion, out var accionApi))
-            return BadRequest();
-
-        try
-        {
-            await _api.TriageIncidentAsync(id, new ApiIncidentTriageRequest { Accion = accionApi });
-            await _activityLogger.LogAsync("Moderacion de reporte", $"Se aplico la accion '{accion}' al reporte #{id}.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo aplicar la accion {Accion} al reporte {Id}.", accion, id);
-            TempData["ModeracionError"] = "No se pudo comunicar con la API de UrbanSync. Intenta de nuevo.";
-        }
-
-        return RedirectToAction(nameof(Moderacion));
-    }
-
-    private async Task<ModeracionViewModel> BuildModeracionAsync()
+    private async Task<ModeracionViewModel>
+        BuildModeracionAsync(
+            CancellationToken cancellationToken)
     {
         try
         {
-            var incidentes = await _api.GetIncidentsAsync("Registrada");
+            var incidentes = await _incidentsApiClient.GetAllAsync(
+                "Registrada",
+                cancellationToken);
 
             return new ModeracionViewModel
             {
                 DatosDisponibles = true,
-                Cola = incidentes.Select(i => new IncidentQueueItemViewModel
-                {
-                    Id = i.Id,
-                    CodigoCaso = i.CodigoCaso,
-                    TipoIncidencia = i.TipoIncidencia,
-                    Prioridad = i.Prioridad,
-                    Direccion = i.Direccion,
-                    Jurisdiccion = i.Jurisdiccion,
-                    UsuarioReporta = i.UsuarioReporta,
-                    FechaReporte = i.FechaReporte
-                }).ToList()
+                Cola = incidentes
+                    .Select(incidente =>
+                        new IncidentQueueItemViewModel
+                        {
+                            Id = incidente.Id,
+                            CodigoCaso = incidente.CodigoCaso,
+                            TipoIncidencia =
+                                incidente.TipoIncidencia,
+                            Prioridad = incidente.Prioridad,
+                            Direccion = incidente.Direccion,
+                            Jurisdiccion =
+                                incidente.Jurisdiccion,
+                            UsuarioReporta =
+                                incidente.UsuarioReporta,
+                            FechaReporte =
+                                incidente.FechaReporte
+                        })
+                    .ToList()
             };
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogWarning(ex, "No se pudo obtener la cola de moderacion desde la API de UrbanSync.");
-            return new ModeracionViewModel { DatosDisponibles = false };
+            _logger.LogWarning(
+                exception,
+                "No se pudo obtener la cola de moderación desde la API de UrbanSync.");
+
+            return new ModeracionViewModel
+            {
+                DatosDisponibles = false
+            };
         }
     }
 }

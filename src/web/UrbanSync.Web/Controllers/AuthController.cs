@@ -2,19 +2,31 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using UrbanSync.Web.ApiClients.Authentication;
+using UrbanSync.Web.ApiClients.Common;
+using UrbanSync.Web.ApiClients.Roles;
+using UrbanSync.Web.ApiClients.Users;
 using UrbanSync.Web.Services;
 using UrbanSync.Web.ViewModels;
 
 namespace UrbanSync.Web.Controllers;
 
-public class AuthController : Controller
+public sealed class AuthController : Controller
 {
-    private readonly IUrbanSyncApiClient _api;
+    private readonly IAuthenticationApiClient _authenticationApiClient;
+    private readonly IUsersApiClient _usersApiClient;
+    private readonly IRolesApiClient _rolesApiClient;
     private readonly ActivityLogger _activityLogger;
 
-    public AuthController(IUrbanSyncApiClient api, ActivityLogger activityLogger)
+    public AuthController(
+        IAuthenticationApiClient authenticationApiClient,
+        IUsersApiClient usersApiClient,
+        IRolesApiClient rolesApiClient,
+        ActivityLogger activityLogger)
     {
-        _api = api;
+        _authenticationApiClient = authenticationApiClient;
+        _usersApiClient = usersApiClient;
+        _rolesApiClient = rolesApiClient;
         _activityLogger = activityLogger;
     }
 
@@ -26,35 +38,63 @@ public class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model)
+    public async Task<IActionResult> Login(
+        LoginViewModel model,
+        CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
         try
         {
-            var response = await _api.LoginAsync(new ApiLoginRequest
-            {
-                Email = model.Email,
-                Password = model.Password
-            });
+            var response =
+                await _authenticationApiClient.LoginAsync(
+                    new LoginRequest
+                    {
+                        Email = model.Email.Trim(),
+                        Password = model.Password
+                    },
+                    cancellationToken);
 
-            if (response is null || string.IsNullOrWhiteSpace(response.Token))
+            if (response is null ||
+                string.IsNullOrWhiteSpace(response.Token))
             {
-                ModelState.AddModelError(string.Empty, "Usuario o contraseña incorrectos.");
+                ModelState.AddModelError(
+                    string.Empty,
+                    "Usuario o contraseña incorrectos.");
+
                 return View(model);
             }
 
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, response.User.Id.ToString()),
-                new(ClaimTypes.Name, response.User.NombreCompleto),
-                new(ClaimTypes.Email, response.User.Email),
-                new(ClaimTypes.Role, response.User.RolNombre),
-                new("access_token", response.Token)
+                new(
+                    ClaimTypes.NameIdentifier,
+                    response.User.Id.ToString()),
+
+                new(
+                    ClaimTypes.Name,
+                    response.User.NombreCompleto),
+
+                new(
+                    ClaimTypes.Email,
+                    response.User.Email),
+
+                new(
+                    ClaimTypes.Role,
+                    response.User.RolNombre),
+
+                new(
+                    "access_token",
+                    response.Token)
             };
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var identity = new ClaimsIdentity(
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme);
+
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(
@@ -63,16 +103,24 @@ public class AuthController : Controller
                 new AuthenticationProperties
                 {
                     IsPersistent = model.RememberMe,
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+                    ExpiresUtc =
+                        DateTimeOffset.UtcNow.AddHours(8)
                 });
 
-            await _activityLogger.LogAsync("Inicio de sesion", "El usuario inicio sesion desde el monolito conectado a la API.");
+            await _activityLogger.LogAsync(
+                "Inicio de sesión",
+                "El usuario inició sesión desde la web.");
 
-            return RedirectToAction("Index", "Dashboard");
+            return RedirectToAction(
+                "Index",
+                "Dashboard");
         }
-        catch (Exception ex)
+        catch (UrbanSyncApiException exception)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(
+                string.Empty,
+                exception.Message);
+
             return View(model);
         }
     }
@@ -85,38 +133,55 @@ public class AuthController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(RegisterViewModel model)
+    public async Task<IActionResult> Register(
+        RegisterViewModel model,
+        CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
+        {
             return View(model);
+        }
 
         try
         {
-            var roles = await _api.GetRolesAsync();
-            var ciudadanoRole = roles.FirstOrDefault(r => r.Nombre == "Ciudadano");
+            var roles = await _rolesApiClient.GetAllAsync(
+                cancellationToken);
+
+            var ciudadanoRole = roles.FirstOrDefault(
+                role => role.Nombre == "Ciudadano");
 
             if (ciudadanoRole is null)
             {
-                ModelState.AddModelError(string.Empty, "La API no tiene configurado el rol Ciudadano.");
+                ModelState.AddModelError(
+                    string.Empty,
+                    "La API no tiene configurado el rol Ciudadano.");
+
                 return View(model);
             }
 
-            await _api.CreateUserAsync(new ApiCreateUserRequest
-            {
-                NombreUsuario = model.Email,
-                NombreCompleto = model.FullName,
-                Email = model.Email,
-                Password = model.Password,
-                RolId = ciudadanoRole.Id
-            });
+            await _usersApiClient.CreateAsync(
+                new CreateUserRequest
+                {
+                    NombreUsuario = model.Email.Trim(),
+                    NombreCompleto = model.FullName.Trim(),
+                    Email = model.Email.Trim(),
+                    Password = model.Password,
+                    RolId = ciudadanoRole.Id
+                },
+                cancellationToken);
 
-            await _activityLogger.LogAsync("Registro", "El usuario se registro como ciudadano desde el monolito conectado a la API.");
+            await _activityLogger.LogAsync(
+                "Registro",
+                "El usuario se registró como ciudadano.");
 
             return RedirectToAction(nameof(Login));
         }
-        catch (Exception ex)
+        catch (UrbanSyncApiException exception)
         {
-            ModelState.AddModelError(string.Empty, ex.Message);
+            ModelState.AddModelError(
+                string.Empty,
+                exception.Message);
+
             return View(model);
         }
     }
@@ -125,8 +190,15 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await _activityLogger.LogAsync("Cierre de sesion", "El usuario cerro sesion.");
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return RedirectToAction("Login", "Auth");
+        await _activityLogger.LogAsync(
+            "Cierre de sesión",
+            "El usuario cerró sesión.");
+
+        await HttpContext.SignOutAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme);
+
+        return RedirectToAction(
+            nameof(Login),
+            "Auth");
     }
 }
