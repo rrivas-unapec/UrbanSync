@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Web.ApiClients.Authentication;
 using UrbanSync.Web.ApiClients.Common;
-using UrbanSync.Web.ApiClients.Roles;
-using UrbanSync.Web.ApiClients.Users;
+using UrbanSync.Web.Authentication;
 using UrbanSync.Web.Services;
 using UrbanSync.Web.ViewModels;
 
@@ -13,26 +12,31 @@ namespace UrbanSync.Web.Controllers;
 
 public sealed class AuthController : Controller
 {
-    private readonly IAuthenticationApiClient _authenticationApiClient;
-    private readonly IUsersApiClient _usersApiClient;
-    private readonly IRolesApiClient _rolesApiClient;
+    private readonly IAuthenticationApiClient
+        _authenticationApiClient;
+
     private readonly ActivityLogger _activityLogger;
 
     public AuthController(
         IAuthenticationApiClient authenticationApiClient,
-        IUsersApiClient usersApiClient,
-        IRolesApiClient rolesApiClient,
         ActivityLogger activityLogger)
     {
-        _authenticationApiClient = authenticationApiClient;
-        _usersApiClient = usersApiClient;
-        _rolesApiClient = rolesApiClient;
+        _authenticationApiClient =
+            authenticationApiClient;
+
         _activityLogger = activityLogger;
     }
 
     [HttpGet]
     public IActionResult Login()
     {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction(
+                "Index",
+                "Dashboard");
+        }
+
         return View();
     }
 
@@ -87,24 +91,27 @@ public sealed class AuthController : Controller
                     response.User.RolNombre),
 
                 new(
-                    "access_token",
+                    WebClaimTypes.AccessToken,
                     response.Token)
             };
 
             var identity = new ClaimsIdentity(
                 claims,
-                CookieAuthenticationDefaults.AuthenticationScheme);
+                CookieAuthenticationDefaults
+                    .AuthenticationScheme);
 
-            var principal = new ClaimsPrincipal(identity);
+            var principal =
+                new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
+                CookieAuthenticationDefaults
+                    .AuthenticationScheme,
                 principal,
                 new AuthenticationProperties
                 {
                     IsPersistent = model.RememberMe,
-                    ExpiresUtc =
-                        DateTimeOffset.UtcNow.AddHours(8)
+                    AllowRefresh = false,
+                    ExpiresUtc = response.ExpiresAtUtc
                 });
 
             await _activityLogger.LogAsync(
@@ -128,6 +135,13 @@ public sealed class AuthController : Controller
     [HttpGet]
     public IActionResult Register()
     {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            return RedirectToAction(
+                "Index",
+                "Dashboard");
+        }
+
         return View();
     }
 
@@ -144,35 +158,22 @@ public sealed class AuthController : Controller
 
         try
         {
-            var roles = await _rolesApiClient.GetAllAsync(
-                cancellationToken);
-
-            var ciudadanoRole = roles.FirstOrDefault(
-                role => role.Nombre == "Ciudadano");
-
-            if (ciudadanoRole is null)
-            {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "La API no tiene configurado el rol Ciudadano.");
-
-                return View(model);
-            }
-
-            await _usersApiClient.CreateAsync(
-                new CreateUserRequest
+            await _authenticationApiClient.RegisterAsync(
+                new RegisterRequest
                 {
-                    NombreUsuario = model.Email.Trim(),
-                    NombreCompleto = model.FullName.Trim(),
+                    NombreCompleto =
+                        model.FullName.Trim(),
                     Email = model.Email.Trim(),
-                    Password = model.Password,
-                    RolId = ciudadanoRole.Id
+                    Password = model.Password
                 },
                 cancellationToken);
 
             await _activityLogger.LogAsync(
                 "Registro",
-                "El usuario se registró como ciudadano.");
+                "Un usuario se registró como ciudadano.");
+
+            TempData["RegistrationSuccess"] =
+                "Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.";
 
             return RedirectToAction(nameof(Login));
         }
@@ -195,7 +196,8 @@ public sealed class AuthController : Controller
             "El usuario cerró sesión.");
 
         await HttpContext.SignOutAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme);
+            CookieAuthenticationDefaults
+                .AuthenticationScheme);
 
         return RedirectToAction(
             nameof(Login),

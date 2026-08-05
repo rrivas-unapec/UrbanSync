@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -19,11 +20,15 @@ public abstract class ApiClientBase
         string uri,
         CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.GetAsync(
-            uri,
+        using var response = await SendAsync(
+            () => _httpClient.GetAsync(
+                uri,
+                cancellationToken),
             cancellationToken);
 
-        await EnsureSuccessAsync(response, cancellationToken);
+        await EnsureSuccessAsync(
+            response,
+            cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<T>(
             JsonOptions,
@@ -35,13 +40,17 @@ public abstract class ApiClientBase
         TRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.PostAsJsonAsync(
-            uri,
-            request,
-            JsonOptions,
+        using var response = await SendAsync(
+            () => _httpClient.PostAsJsonAsync(
+                uri,
+                request,
+                JsonOptions,
+                cancellationToken),
             cancellationToken);
 
-        await EnsureSuccessAsync(response, cancellationToken);
+        await EnsureSuccessAsync(
+            response,
+            cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<TResponse>(
             JsonOptions,
@@ -53,13 +62,17 @@ public abstract class ApiClientBase
         TRequest request,
         CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.PatchAsJsonAsync(
-            uri,
-            request,
-            JsonOptions,
+        using var response = await SendAsync(
+            () => _httpClient.PatchAsJsonAsync(
+                uri,
+                request,
+                JsonOptions,
+                cancellationToken),
             cancellationToken);
 
-        await EnsureSuccessAsync(response, cancellationToken);
+        await EnsureSuccessAsync(
+            response,
+            cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<TResponse>(
             JsonOptions,
@@ -70,12 +83,41 @@ public abstract class ApiClientBase
         string uri,
         CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.PatchAsync(
-            uri,
-            content: null,
+        using var response = await SendAsync(
+            () => _httpClient.PatchAsync(
+                uri,
+                content: null,
+                cancellationToken),
             cancellationToken);
 
-        await EnsureSuccessAsync(response, cancellationToken);
+        await EnsureSuccessAsync(
+            response,
+            cancellationToken);
+    }
+
+    private static async Task<HttpResponseMessage> SendAsync(
+        Func<Task<HttpResponseMessage>> sendRequest,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await sendRequest();
+        }
+        catch (OperationCanceledException exception)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new UrbanSyncApiException(
+                "La API de UrbanSync tardó demasiado en responder.",
+                HttpStatusCode.RequestTimeout,
+                exception);
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new UrbanSyncApiException(
+                "No fue posible conectarse con la API de UrbanSync.",
+                HttpStatusCode.ServiceUnavailable,
+                exception);
+        }
     }
 
     private static async Task EnsureSuccessAsync(
@@ -87,18 +129,21 @@ public abstract class ApiClientBase
             return;
         }
 
-        var responseBody = await response.Content.ReadAsStringAsync(
-            cancellationToken);
+        var responseBody =
+            await response.Content.ReadAsStringAsync(
+                cancellationToken);
 
-        var message = "La API de UrbanSync rechazó la operación.";
+        var message =
+            "La API de UrbanSync rechazó la operación.";
 
         if (!string.IsNullOrWhiteSpace(responseBody))
         {
             try
             {
-                var error = JsonSerializer.Deserialize<ApiErrorResponse>(
-                    responseBody,
-                    JsonOptions);
+                var error =
+                    JsonSerializer.Deserialize<ApiErrorResponse>(
+                        responseBody,
+                        JsonOptions);
 
                 message =
                     GetValidationMessage(error?.Errors) ??
@@ -129,6 +174,7 @@ public abstract class ApiClientBase
 
         return string.Join(
             " ",
-            errors.Values.SelectMany(messages => messages));
+            errors.Values.SelectMany(
+                messages => messages));
     }
 }

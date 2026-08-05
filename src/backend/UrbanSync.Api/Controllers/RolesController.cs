@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Api.Contracts.Roles;
 using UrbanSync.Application.Features.Roles;
@@ -5,6 +6,7 @@ using UrbanSync.Application.Features.Roles;
 namespace UrbanSync.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Administrador")]
 [Route("api/roles")]
 public sealed class RolesController : ControllerBase
 {

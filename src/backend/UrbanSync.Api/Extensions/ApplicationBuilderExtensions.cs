@@ -17,6 +17,7 @@ public static class ApplicationBuilderExtensions
 
         app.UseCors(ServiceCollectionExtensions.CorsPolicyName);
 
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();

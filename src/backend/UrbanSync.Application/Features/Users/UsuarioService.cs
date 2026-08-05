@@ -10,15 +10,18 @@ public class UsuarioService : IUsuarioService
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IRolRepository _rolRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITokenGenerator _tokenGenerator;
 
     public UsuarioService(
         IUsuarioRepository usuarioRepository,
         IRolRepository rolRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITokenGenerator tokenGenerator)
     {
         _usuarioRepository = usuarioRepository;
         _rolRepository = rolRepository;
         _passwordHasher = passwordHasher;
+        _tokenGenerator = tokenGenerator;
     }
 
     public async Task<IEnumerable<UsuarioDto>> GetAllAsync()
@@ -111,10 +114,19 @@ public class UsuarioService : IUsuarioService
             return null;
         }
 
+        var userDto = await ToDtoAsync(usuario);
+
+        var generatedToken = _tokenGenerator.Generate(
+            usuario.Id,
+            usuario.NombreCompleto,
+            usuario.Email,
+            userDto.RolNombre);
+
         return new LoginResponseDto
         {
-            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-            User = await ToDtoAsync(usuario)
+            Token = generatedToken.AccessToken,
+            ExpiresAtUtc = generatedToken.ExpiresAtUtc,
+            User = userDto
         };
     }
 

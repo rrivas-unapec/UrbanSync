@@ -9,22 +9,39 @@ namespace UrbanSync.Application.UnitTests.Features.Users;
 
 public sealed class UsuarioServiceTests
 {
-    private readonly Mock<IUsuarioRepository> _usuarioRepositoryMock;
-    private readonly Mock<IRolRepository> _rolRepositoryMock;
-    private readonly Mock<IPasswordHasher> _passwordHasherMock;
+    private readonly Mock<IUsuarioRepository>
+        _usuarioRepositoryMock;
+
+    private readonly Mock<IRolRepository>
+        _rolRepositoryMock;
+
+    private readonly Mock<IPasswordHasher>
+        _passwordHasherMock;
+
+    private readonly Mock<ITokenGenerator>
+        _tokenGeneratorMock;
 
     private readonly UsuarioService _service;
 
     public UsuarioServiceTests()
     {
-        _usuarioRepositoryMock = new Mock<IUsuarioRepository>();
-        _rolRepositoryMock = new Mock<IRolRepository>();
-        _passwordHasherMock = new Mock<IPasswordHasher>();
+        _usuarioRepositoryMock =
+            new Mock<IUsuarioRepository>();
+
+        _rolRepositoryMock =
+            new Mock<IRolRepository>();
+
+        _passwordHasherMock =
+            new Mock<IPasswordHasher>();
+
+        _tokenGeneratorMock =
+            new Mock<ITokenGenerator>();
 
         _service = new UsuarioService(
             _usuarioRepositoryMock.Object,
             _rolRepositoryMock.Object,
-            _passwordHasherMock.Object);
+            _passwordHasherMock.Object,
+            _tokenGeneratorMock.Object);
     }
 
     [Fact]
@@ -39,58 +56,93 @@ public sealed class UsuarioServiceTests
             RolId = 1
         };
 
-        var rol = new Rol
+        var role = new Rol
         {
             Id = 1,
-            Nombre = "Admin",
+            Nombre = "Administrador",
             Activo = true
         };
 
-        var hash = new byte[] { 1, 2, 3 };
-        var salt = new byte[] { 4, 5, 6 };
+        var hash = new byte[]
+        {
+            1,
+            2,
+            3
+        };
+
+        var salt = new byte[]
+        {
+            4,
+            5,
+            6
+        };
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByNombreUsuarioAsync(request.NombreUsuario))
+                repository.GetByNombreUsuarioAsync(
+                    request.NombreUsuario))
             .ReturnsAsync((Usuario?)null);
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
+                repository.GetByEmailAsync(
+                    request.Email))
             .ReturnsAsync((Usuario?)null);
 
         _rolRepositoryMock
             .Setup(repository =>
-                repository.GetByIdAsync(request.RolId))
-            .ReturnsAsync(rol);
+                repository.GetByIdAsync(
+                    request.RolId))
+            .ReturnsAsync(role);
 
         _passwordHasherMock
-            .Setup(hasher => hasher.Hash(request.Password))
+            .Setup(hasher =>
+                hasher.Hash(request.Password))
             .Returns((hash, salt));
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.CreateAsync(It.IsAny<Usuario>()))
+                repository.CreateAsync(
+                    It.IsAny<Usuario>()))
             .ReturnsAsync(10);
 
         var result = await _service.CreateAsync(request);
 
         Assert.Equal(10, result.Id);
-        Assert.Equal(request.NombreUsuario, result.NombreUsuario);
-        Assert.Equal(request.NombreCompleto, result.NombreCompleto);
-        Assert.Equal(request.Email, result.Email);
-        Assert.Equal(request.RolId, result.RolId);
-        Assert.Equal(rol.Nombre, result.RolNombre);
+        Assert.Equal(
+            request.NombreUsuario,
+            result.NombreUsuario);
+        Assert.Equal(
+            request.NombreCompleto,
+            result.NombreCompleto);
+        Assert.Equal(
+            request.Email,
+            result.Email);
+        Assert.Equal(
+            request.RolId,
+            result.RolId);
+        Assert.Equal(
+            role.Nombre,
+            result.RolNombre);
         Assert.True(result.Activo);
 
         _usuarioRepositoryMock.Verify(
-            repository => repository.CreateAsync(
-                It.Is<Usuario>(usuario =>
-                    usuario.NombreUsuario == request.NombreUsuario &&
-                    usuario.Email == request.Email &&
-                    usuario.PasswordHash == hash &&
-                    usuario.PasswordSalt == salt &&
-                    usuario.RolId == request.RolId)),
+            repository =>
+                repository.CreateAsync(
+                    It.Is<Usuario>(usuario =>
+                        usuario.NombreUsuario ==
+                            request.NombreUsuario &&
+                        usuario.NombreCompleto ==
+                            request.NombreCompleto &&
+                        usuario.Email ==
+                            request.Email &&
+                        usuario.PasswordHash ==
+                            hash &&
+                        usuario.PasswordSalt ==
+                            salt &&
+                        usuario.RolId ==
+                            request.RolId &&
+                        usuario.Activo)),
             Times.Once);
     }
 
@@ -101,15 +153,18 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByNombreUsuarioAsync(request.NombreUsuario))
+                repository.GetByNombreUsuarioAsync(
+                    request.NombreUsuario))
             .ReturnsAsync(new Usuario
             {
                 Id = 1,
-                NombreUsuario = request.NombreUsuario
+                NombreUsuario =
+                    request.NombreUsuario
             });
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => _service.CreateAsync(request));
+        var exception =
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.CreateAsync(request));
 
         Assert.Contains(
             "nombre de usuario",
@@ -118,7 +173,8 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock.Verify(
             repository =>
-                repository.CreateAsync(It.IsAny<Usuario>()),
+                repository.CreateAsync(
+                    It.IsAny<Usuario>()),
             Times.Never);
     }
 
@@ -129,20 +185,23 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByNombreUsuarioAsync(request.NombreUsuario))
+                repository.GetByNombreUsuarioAsync(
+                    request.NombreUsuario))
             .ReturnsAsync((Usuario?)null);
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
+                repository.GetByEmailAsync(
+                    request.Email))
             .ReturnsAsync(new Usuario
             {
                 Id = 1,
                 Email = request.Email
             });
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => _service.CreateAsync(request));
+        var exception =
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.CreateAsync(request));
 
         Assert.Contains(
             "correo",
@@ -151,7 +210,8 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock.Verify(
             repository =>
-                repository.CreateAsync(It.IsAny<Usuario>()),
+                repository.CreateAsync(
+                    It.IsAny<Usuario>()),
             Times.Never);
     }
 
@@ -162,21 +222,25 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByNombreUsuarioAsync(request.NombreUsuario))
+                repository.GetByNombreUsuarioAsync(
+                    request.NombreUsuario))
             .ReturnsAsync((Usuario?)null);
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
+                repository.GetByEmailAsync(
+                    request.Email))
             .ReturnsAsync((Usuario?)null);
 
         _rolRepositoryMock
             .Setup(repository =>
-                repository.GetByIdAsync(request.RolId))
+                repository.GetByIdAsync(
+                    request.RolId))
             .ReturnsAsync((Rol?)null);
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => _service.CreateAsync(request));
+        var exception =
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => _service.CreateAsync(request));
 
         Assert.Contains(
             "rol",
@@ -185,7 +249,8 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock.Verify(
             repository =>
-                repository.CreateAsync(It.IsAny<Usuario>()),
+                repository.CreateAsync(
+                    It.IsAny<Usuario>()),
             Times.Never);
     }
 
@@ -200,7 +265,8 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
+                repository.GetByEmailAsync(
+                    request.Email))
             .ReturnsAsync((Usuario?)null);
 
         var result = await _service.LoginAsync(request);
@@ -208,10 +274,20 @@ public sealed class UsuarioServiceTests
         Assert.Null(result);
 
         _passwordHasherMock.Verify(
-            hasher => hasher.Verify(
-                It.IsAny<string>(),
-                It.IsAny<byte[]>(),
-                It.IsAny<byte[]>()),
+            hasher =>
+                hasher.Verify(
+                    It.IsAny<string>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<byte[]>()),
+            Times.Never);
+
+        _tokenGeneratorMock.Verify(
+            generator =>
+                generator.Generate(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
             Times.Never);
     }
 
@@ -226,7 +302,8 @@ public sealed class UsuarioServiceTests
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
+                repository.GetByEmailAsync(
+                    request.Email))
             .ReturnsAsync(new Usuario
             {
                 Id = 1,
@@ -237,6 +314,23 @@ public sealed class UsuarioServiceTests
         var result = await _service.LoginAsync(request);
 
         Assert.Null(result);
+
+        _passwordHasherMock.Verify(
+            hasher =>
+                hasher.Verify(
+                    It.IsAny<string>(),
+                    It.IsAny<byte[]>(),
+                    It.IsAny<byte[]>()),
+            Times.Never);
+
+        _tokenGeneratorMock.Verify(
+            generator =>
+                generator.Generate(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+            Times.Never);
     }
 
     [Fact]
@@ -248,27 +342,38 @@ public sealed class UsuarioServiceTests
             Password = "WrongPassword"
         };
 
-        var usuario = CreateActiveUser();
+        var user = CreateActiveUser();
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
-            .ReturnsAsync(usuario);
+                repository.GetByEmailAsync(
+                    request.Email))
+            .ReturnsAsync(user);
 
         _passwordHasherMock
-            .Setup(hasher => hasher.Verify(
-                request.Password,
-                usuario.PasswordHash,
-                usuario.PasswordSalt))
+            .Setup(hasher =>
+                hasher.Verify(
+                    request.Password,
+                    user.PasswordHash,
+                    user.PasswordSalt))
             .Returns(false);
 
         var result = await _service.LoginAsync(request);
 
         Assert.Null(result);
+
+        _tokenGeneratorMock.Verify(
+            generator =>
+                generator.Generate(
+                    It.IsAny<int>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+            Times.Never);
     }
 
     [Fact]
-    public async Task LoginAsync_ShouldReturnUser_WhenCredentialsAreValid()
+    public async Task LoginAsync_ShouldReturnJwt_WhenCredentialsAreValid()
     {
         var request = new LoginRequestDto
         {
@@ -276,37 +381,85 @@ public sealed class UsuarioServiceTests
             Password = "Password123!"
         };
 
-        var usuario = CreateActiveUser();
+        var user = CreateActiveUser();
+
+        var role = new Rol
+        {
+            Id = user.RolId,
+            Nombre = "Ciudadano",
+            Activo = true
+        };
+
+        var expiresAtUtc =
+            DateTimeOffset.UtcNow.AddHours(1);
 
         _usuarioRepositoryMock
             .Setup(repository =>
-                repository.GetByEmailAsync(request.Email))
-            .ReturnsAsync(usuario);
+                repository.GetByEmailAsync(
+                    request.Email))
+            .ReturnsAsync(user);
 
         _passwordHasherMock
-            .Setup(hasher => hasher.Verify(
-                request.Password,
-                usuario.PasswordHash,
-                usuario.PasswordSalt))
+            .Setup(hasher =>
+                hasher.Verify(
+                    request.Password,
+                    user.PasswordHash,
+                    user.PasswordSalt))
             .Returns(true);
 
         _rolRepositoryMock
             .Setup(repository =>
-                repository.GetByIdAsync(usuario.RolId))
-            .ReturnsAsync(new Rol
-            {
-                Id = usuario.RolId,
-                Nombre = "Ciudadano",
-                Activo = true
-            });
+                repository.GetByIdAsync(
+                    user.RolId))
+            .ReturnsAsync(role);
+
+        _tokenGeneratorMock
+            .Setup(generator =>
+                generator.Generate(
+                    user.Id,
+                    user.NombreCompleto,
+                    user.Email,
+                    role.Nombre))
+            .Returns(new GeneratedToken(
+                "header.payload.signature",
+                expiresAtUtc));
 
         var result = await _service.LoginAsync(request);
 
         Assert.NotNull(result);
-        Assert.False(string.IsNullOrWhiteSpace(result.Token));
-        Assert.Equal(usuario.Id, result.User.Id);
-        Assert.Equal(usuario.Email, result.User.Email);
-        Assert.Equal("Ciudadano", result.User.RolNombre);
+
+        Assert.Equal(
+            "header.payload.signature",
+            result.Token);
+
+        Assert.Equal(
+            expiresAtUtc,
+            result.ExpiresAtUtc);
+
+        Assert.Equal(
+            user.Id,
+            result.User.Id);
+
+        Assert.Equal(
+            user.NombreUsuario,
+            result.User.NombreUsuario);
+
+        Assert.Equal(
+            user.Email,
+            result.User.Email);
+
+        Assert.Equal(
+            role.Nombre,
+            result.User.RolNombre);
+
+        _tokenGeneratorMock.Verify(
+            generator =>
+                generator.Generate(
+                    user.Id,
+                    user.NombreCompleto,
+                    user.Email,
+                    role.Nombre),
+            Times.Once);
     }
 
     private static UsuarioCreateDto CreateValidRequest()
@@ -327,10 +480,21 @@ public sealed class UsuarioServiceTests
         {
             Id = 5,
             NombreUsuario = "ciudadano",
-            NombreCompleto = "Ciudadano UrbanSync",
+            NombreCompleto =
+                "Ciudadano UrbanSync",
             Email = "user@urbansync.com",
-            PasswordHash = [1, 2, 3],
-            PasswordSalt = [4, 5, 6],
+            PasswordHash =
+            [
+                1,
+                2,
+                3
+            ],
+            PasswordSalt =
+            [
+                4,
+                5,
+                6
+            ],
             RolId = 6,
             Activo = true
         };

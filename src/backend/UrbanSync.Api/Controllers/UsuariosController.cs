@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Api.Contracts.Users;
 using UrbanSync.Application.Features.Users;
 
 namespace UrbanSync.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Administrador")]
 [Route("api/usuarios")]
 public sealed class UsuariosController : ControllerBase
 {
@@ -54,8 +56,10 @@ public sealed class UsuariosController : ControllerBase
         var createdUser = await _usuarioService.CreateAsync(
             new UsuarioCreateDto
             {
-                NombreUsuario = request.NombreUsuario.Trim(),
-                NombreCompleto = request.NombreCompleto.Trim(),
+                NombreUsuario =
+                    request.NombreUsuario.Trim(),
+                NombreCompleto =
+                    request.NombreCompleto.Trim(),
                 Email = request.Email.Trim(),
                 Password = request.Password,
                 RolId = request.RolId
@@ -75,7 +79,8 @@ public sealed class UsuariosController : ControllerBase
         StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleStatus(int id)
     {
-        var changed = await _usuarioService.ToggleStatusAsync(id);
+        var changed =
+            await _usuarioService.ToggleStatusAsync(id);
 
         if (!changed)
         {

@@ -5,6 +5,10 @@
 
   <ItemGroup>
     <PackageVersion
+      Include="Microsoft.AspNetCore.Authentication.JwtBearer"
+      Version="8.0.18" />
+
+    <PackageVersion
       Include="Microsoft.AspNetCore.Mvc.Testing"
       Version="8.0.18" />
 
@@ -17,8 +21,16 @@
       Version="8.0.0" />
 
     <PackageVersion
+      Include="Microsoft.Extensions.Configuration.Binder"
+      Version="8.0.2" />
+
+    <PackageVersion
       Include="Microsoft.Extensions.DependencyInjection.Abstractions"
       Version="8.0.2" />
+
+    <PackageVersion
+      Include="Microsoft.Extensions.Options.ConfigurationExtensions"
+      Version="8.0.0" />
 
     <PackageVersion
       Include="Microsoft.NET.Test.Sdk"
@@ -31,6 +43,10 @@
     <PackageVersion
       Include="Swashbuckle.AspNetCore"
       Version="6.4.0" />
+
+    <PackageVersion
+      Include="System.IdentityModel.Tokens.Jwt"
+      Version="8.16.0" />
 
     <PackageVersion
       Include="xunit"

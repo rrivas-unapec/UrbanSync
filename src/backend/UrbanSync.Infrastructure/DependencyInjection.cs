@@ -27,6 +27,31 @@ public static class DependencyInjection
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
 
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(
+                configuration.GetRequiredSection(
+                    JwtOptions.SectionName))
+            .Validate(
+                options =>
+                    !string.IsNullOrWhiteSpace(options.Issuer),
+                "Jwt:Issuer es obligatorio.")
+            .Validate(
+                options =>
+                    !string.IsNullOrWhiteSpace(options.Audience),
+                "Jwt:Audience es obligatorio.")
+            .Validate(
+                options =>
+                    !string.IsNullOrWhiteSpace(options.SecretKey) &&
+                    options.SecretKey.Length >= 32,
+                "Jwt:SecretKey debe contener al menos 32 caracteres.")
+            .Validate(
+                options => options.ExpirationMinutes > 0,
+                "Jwt:ExpirationMinutes debe ser mayor que cero.")
+            .ValidateOnStart();
+
+        services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
+
         return services;
     }
 }
