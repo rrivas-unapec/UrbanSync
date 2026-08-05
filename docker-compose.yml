@@ -1,45 +1,79 @@
+name: urbansync
+
 services:
-  db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: urbansync-db
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/api.Dockerfile
+
+    container_name: urbansync-api
+
+    restart: unless-stopped
+
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+      ASPNETCORE_ENVIRONMENT: Production
+
+      ConnectionStrings__UrbanSyncDb: ${URBANSYNC_DB_CONNECTION}
+
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      Jwt__SecretKey: ${JWT_SECRET_KEY}
+      Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
+
+      Cors__AllowedOrigins__0: http://localhost:8081
+
     ports:
-      - "14333:1433"
-    volumes:
-      - mssql_data:/var/opt/mssql
+      - "8080:8080"
+
+    networks:
+      - urbansync-network
+
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -C -Q \"SELECT 1\" -b -o /dev/null"
+          "curl --fail --silent http://localhost:8080/health || exit 1"
         ]
-      interval: 10s
+      interval: 15s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
+      start_period: 20s
 
-  api:
+  web:
     build:
-      context: ./src/backend
-      dockerfile: Dockerfile
-    container_name: urbansync-api
-    environment:
-      ASPNETCORE_ENVIRONMENT: "Production"
-      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=UrbanSync;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True"
-      Jwt__Key: "${JWT_KEY}"
-      Jwt__Issuer: "UrbanSync"
-      Jwt__Audience: "UrbanSyncMobile"
-      Jwt__ExpiresMinutes: "480"
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - api_uploads:/app/wwwroot/uploads
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
 
-volumes:
-  mssql_data:
-  api_uploads:
+    container_name: urbansync-web
+
+    restart: unless-stopped
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+      UrbanSyncApi__BaseUrl: http://api:8080/
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    ports:
+      - "8081:8080"
+
+    networks:
+      - urbansync-network
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://localhost:8080/health || exit 1"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+networks:
+  urbansync-network:
+    driver: bridge
