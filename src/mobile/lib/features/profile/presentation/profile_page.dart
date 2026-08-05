@@ -25,7 +25,9 @@ class ProfilePage extends ConsumerWidget {
           Center(
             child: CircleAvatar(
               radius: 40,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              backgroundColor: AppColors.primary.withValues(
+                alpha: 0.12,
+              ),
               child: const Icon(
                 Icons.person,
                 size: 44,
@@ -39,10 +41,13 @@ class ProfilePage extends ConsumerWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          const SizedBox(height: 4),
           Text(
             user.role,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.mutedForeground),
+            style: const TextStyle(
+              color: AppColors.mutedForeground,
+            ),
           ),
           const SizedBox(height: 24),
           AppCard(
@@ -55,15 +60,23 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const Divider(height: 20),
                 _InfoRow(
-                  icon: Icons.badge_outlined,
-                  label: 'Cédula',
-                  value: user.identificationNumber,
+                  icon: Icons.account_circle_outlined,
+                  label: 'Nombre de usuario',
+                  value: user.username,
                 ),
                 const Divider(height: 20),
                 _InfoRow(
-                  icon: Icons.work_outline,
-                  label: 'Posición',
-                  value: user.position,
+                  icon: Icons.admin_panel_settings_outlined,
+                  label: 'Rol',
+                  value: user.role,
+                ),
+                const Divider(height: 20),
+                _InfoRow(
+                  icon: user.isActive
+                      ? Icons.check_circle_outline
+                      : Icons.cancel_outlined,
+                  label: 'Estado',
+                  value: user.isActive ? 'Activo' : 'Inactivo',
                 ),
               ],
             ),
@@ -72,7 +85,11 @@ class ProfilePage extends ConsumerWidget {
           SecondaryButton(
             label: 'Cerrar sesión',
             icon: Icons.logout,
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+            onPressed: () {
+              ref
+                  .read(authControllerProvider.notifier)
+                  .logout();
+            },
           ),
         ],
       ),
@@ -94,24 +111,34 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: AppColors.mutedForeground),
+        Icon(
+          icon,
+          size: 20,
+          color: AppColors.mutedForeground,
+        ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.mutedForeground,
-                fontSize: 12,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.mutedForeground,
+                  fontSize: 12,
+                ),
               ),
-            ),
-            Text(
-              value.isEmpty ? '—' : value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
+              const SizedBox(height: 2),
+              Text(
+                value.isEmpty ? '—' : value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

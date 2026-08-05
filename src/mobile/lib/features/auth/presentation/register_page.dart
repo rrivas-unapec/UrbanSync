@@ -13,40 +13,55 @@ class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  ConsumerState<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() =>
+      _RegisterPageState();
 }
 
-class _RegisterPageState extends ConsumerState<RegisterPage> {
+class _RegisterPageState
+    extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
-  final _cedulaController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
+
+  final _fullNameController =
+      TextEditingController();
+
+  final _emailController =
+      TextEditingController();
+
+  final _passwordController =
+      TextEditingController();
+
+  final _confirmController =
+      TextEditingController();
+
   bool _loading = false;
 
   @override
   void dispose() {
     _fullNameController.dispose();
-    _cedulaController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _loading = true);
-    final controller = ref.read(authControllerProvider.notifier);
+
+    final controller =
+        ref.read(authControllerProvider.notifier);
+
     try {
       await controller.register(
         fullName: _fullNameController.text.trim(),
-        identificationNumber: _cedulaController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
       await controller.login(
         _emailController.text.trim(),
         _passwordController.text,
@@ -54,51 +69,60 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } on ApiException catch (error) {
       _showError(error.message);
     } catch (_) {
-      _showError('Ocurrió un error inesperado.');
+      _showError(
+        'Ocurrió un error inesperado.',
+      );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   void _showError(String message) {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.destructive),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.destructive,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear cuenta')),
+      appBar: AppBar(
+        title: const Text('Crear cuenta'),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment:
+                  CrossAxisAlignment.stretch,
               children: [
                 AppTextField(
                   label: 'Nombre completo',
                   controller: _fullNameController,
                   prefixIcon: Icons.person_outline,
-                  validator: (v) =>
-                      Validators.required(v, field: 'El nombre completo'),
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  label: 'Cédula',
-                  controller: _cedulaController,
-                  keyboardType: TextInputType.number,
-                  prefixIcon: Icons.badge_outlined,
-                  validator: Validators.cedula,
+                  validator: (value) =>
+                      Validators.required(
+                    value,
+                    field: 'El nombre completo',
+                  ),
                 ),
                 const SizedBox(height: 16),
                 AppTextField(
                   label: 'Correo electrónico',
                   controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType:
+                      TextInputType.emailAddress,
                   prefixIcon: Icons.email_outlined,
                   validator: Validators.email,
                 ),
@@ -116,8 +140,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   controller: _confirmController,
                   obscureText: true,
                   prefixIcon: Icons.lock_outline,
-                  validator: (v) =>
-                      Validators.confirmPassword(v, _passwordController.text),
+                  validator: (value) =>
+                      Validators.confirmPassword(
+                    value,
+                    _passwordController.text,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -135,8 +162,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: _loading ? null : () => context.go('/login'),
-                  child: const Text('Ya tengo cuenta'),
+                  onPressed: _loading
+                      ? null
+                      : () => context.go('/login'),
+                  child: const Text(
+                    'Ya tengo cuenta',
+                  ),
                 ),
               ],
             ),
