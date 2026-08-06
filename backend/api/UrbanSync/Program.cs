@@ -22,10 +22,12 @@ builder.Services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory(conn
 // Repositories (DataAccess)
 builder.Services.AddScoped<IRolRepository, RolRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 
 // Services (Business)
 builder.Services.AddScoped<IRolService, RolService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 
 var app = builder.Build();
 
