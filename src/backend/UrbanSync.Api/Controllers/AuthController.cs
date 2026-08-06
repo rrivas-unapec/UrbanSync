@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Api.Contracts.Authentication;
@@ -12,7 +13,8 @@ namespace UrbanSync.Api.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private const string CitizenRoleName = "Ciudadano";
+    private const string CitizenRoleName =
+        "Ciudadano";
 
     private readonly IUsuarioService _usuarioService;
     private readonly IRolService _rolService;
@@ -36,36 +38,42 @@ public sealed class AuthController : ControllerBase
     public async Task<ActionResult<LoginResponse>> Login(
         [FromBody] LoginRequest request)
     {
-        var result = await _usuarioService.LoginAsync(
-            new LoginRequestDto
-            {
-                Email = request.Email.Trim(),
-                Password = request.Password
-            });
+        var result =
+            await _usuarioService.LoginAsync(
+                new LoginRequestDto
+                {
+                    Email = request.Email.Trim(),
+                    Password = request.Password
+                });
 
         if (result is null)
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Credenciales inválidas",
-                Detail =
-                    "El correo o la contraseña son incorrectos.",
-                Instance = HttpContext.Request.Path,
-                Extensions =
+            return Unauthorized(
+                new ProblemDetails
                 {
-                    ["traceId"] =
-                        HttpContext.TraceIdentifier
-                }
-            });
+                    Status =
+                        StatusCodes.Status401Unauthorized,
+                    Title = "Credenciales inválidas",
+                    Detail =
+                        "El correo o la contraseña son incorrectos.",
+                    Instance =
+                        HttpContext.Request.Path,
+                    Extensions =
+                    {
+                        ["traceId"] =
+                            HttpContext.TraceIdentifier
+                    }
+                });
         }
 
-        return Ok(new LoginResponse
-        {
-            Token = result.Token,
-            ExpiresAtUtc = result.ExpiresAtUtc,
-            User = MapUser(result.User)
-        });
+        return Ok(
+            new LoginResponse
+            {
+                Token = result.Token,
+                ExpiresAtUtc =
+                    result.ExpiresAtUtc,
+                User = MapUser(result.User)
+            });
     }
 
     [AllowAnonymous]
@@ -79,13 +87,15 @@ public sealed class AuthController : ControllerBase
     public async Task<ActionResult<UserResponse>> Register(
         [FromBody] RegisterRequest request)
     {
-        var roles = await _rolService.GetAllAsync();
+        var roles =
+            await _rolService.GetAllAsync();
 
-        var citizenRole = roles.FirstOrDefault(role =>
-            string.Equals(
-                role.Nombre,
-                CitizenRoleName,
-                StringComparison.OrdinalIgnoreCase));
+        var citizenRole =
+            roles.FirstOrDefault(role =>
+                string.Equals(
+                    role.Nombre,
+                    CitizenRoleName,
+                    StringComparison.OrdinalIgnoreCase));
 
         if (citizenRole is null)
         {
@@ -93,36 +103,133 @@ public sealed class AuthController : ControllerBase
                 "El rol Ciudadano no está configurado.");
         }
 
-        var normalizedEmail = request.Email.Trim();
+        var normalizedEmail =
+            request.Email.Trim();
 
-        var createdUser = await _usuarioService.CreateAsync(
-            new UsuarioCreateDto
-            {
-                NombreUsuario = normalizedEmail,
-                NombreCompleto =
-                    request.NombreCompleto.Trim(),
-                Email = normalizedEmail,
-                Password = request.Password,
-                RolId = citizenRole.Id
-            });
+        var createdUser =
+            await _usuarioService.CreateAsync(
+                new UsuarioCreateDto
+                {
+                    NombreUsuario =
+                        normalizedEmail,
+                    NombreCompleto =
+                        request.NombreCompleto.Trim(),
+                    Email = normalizedEmail,
+                    Password = request.Password,
+                    RolId = citizenRole.Id
+                });
 
-        var response = MapUser(createdUser);
+        var response =
+            MapUser(createdUser);
 
         return Created(
             $"/api/usuarios/{response.Id}",
             response);
     }
 
-    private static UserResponse MapUser(UsuarioDto user)
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(
+        StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request)
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(
+                userIdValue,
+                out var userId) ||
+            userId <= 0)
+        {
+            return Unauthorized(
+                CreateProblem(
+                    StatusCodes.Status401Unauthorized,
+                    "Usuario no identificado",
+                    "No fue posible identificar al usuario autenticado."));
+        }
+
+        try
+        {
+            await _usuarioService
+                .ChangePasswordAsync(
+                    new ChangePasswordDto
+                    {
+                        UserId = userId,
+                        CurrentPassword =
+                            request.CurrentPassword,
+                        NewPassword =
+                            request.NewPassword
+                    });
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return Unauthorized(
+                CreateProblem(
+                    StatusCodes.Status401Unauthorized,
+                    "Contraseña actual incorrecta",
+                    exception.Message));
+        }
+        catch (KeyNotFoundException exception)
+        {
+            return NotFound(
+                CreateProblem(
+                    StatusCodes.Status404NotFound,
+                    "Usuario no encontrado",
+                    exception.Message));
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(
+                CreateProblem(
+                    StatusCodes.Status400BadRequest,
+                    "Solicitud inválida",
+                    exception.Message));
+        }
+    }
+
+    private ProblemDetails CreateProblem(
+        int status,
+        string title,
+        string detail)
+    {
+        return new ProblemDetails
+        {
+            Status = status,
+            Title = title,
+            Detail = detail,
+            Instance = HttpContext.Request.Path,
+            Extensions =
+            {
+                ["traceId"] =
+                    HttpContext.TraceIdentifier
+            }
+        };
+    }
+
+    private static UserResponse MapUser(
+        UsuarioDto user)
     {
         return new UserResponse
         {
             Id = user.Id,
-            NombreUsuario = user.NombreUsuario,
-            NombreCompleto = user.NombreCompleto,
+            NombreUsuario =
+                user.NombreUsuario,
+            NombreCompleto =
+                user.NombreCompleto,
             Email = user.Email,
             RolId = user.RolId,
-            RolNombre = user.RolNombre,
+            RolNombre =
+                user.RolNombre,
             Activo = user.Activo
         };
     }

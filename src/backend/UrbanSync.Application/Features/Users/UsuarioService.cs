@@ -1,6 +1,6 @@
-﻿using UrbanSync.Application.Common.Interfaces.Persistence;
+﻿using UrbanSync.Application.Common.Interfaces.Authentication;
+using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Application.Features.Authentication;
-using UrbanSync.Application.Common.Interfaces.Authentication;
 using UrbanSync.Domain.Entities;
 
 namespace UrbanSync.Application.Features.Users;
@@ -26,30 +26,40 @@ public class UsuarioService : IUsuarioService
 
     public async Task<IEnumerable<UsuarioDto>> GetAllAsync()
     {
-        var usuarios = await _usuarioRepository.GetAllAsync();
+        var usuarios =
+            await _usuarioRepository.GetAllAsync();
+
         var result = new List<UsuarioDto>();
 
         foreach (var usuario in usuarios)
         {
-            result.Add(await ToDtoAsync(usuario));
+            result.Add(
+                await ToDtoAsync(usuario));
         }
 
         return result;
     }
 
-    public async Task<UsuarioDto?> GetByIdAsync(int id)
+    public async Task<UsuarioDto?> GetByIdAsync(
+        int id)
     {
-        var usuario = await _usuarioRepository.GetByIdAsync(id);
+        var usuario =
+            await _usuarioRepository.GetByIdAsync(id);
 
         return usuario is null
             ? null
             : await ToDtoAsync(usuario);
     }
 
-    public async Task<UsuarioDto> CreateAsync(UsuarioCreateDto dto)
+    public async Task<UsuarioDto> CreateAsync(
+        UsuarioCreateDto dto)
     {
-        var existingUser = await _usuarioRepository
-            .GetByNombreUsuarioAsync(dto.NombreUsuario);
+        ArgumentNullException.ThrowIfNull(dto);
+
+        var existingUser =
+            await _usuarioRepository
+                .GetByNombreUsuarioAsync(
+                    dto.NombreUsuario);
 
         if (existingUser is not null)
         {
@@ -58,8 +68,9 @@ public class UsuarioService : IUsuarioService
                 nameof(dto));
         }
 
-        var existingEmail = await _usuarioRepository
-            .GetByEmailAsync(dto.Email);
+        var existingEmail =
+            await _usuarioRepository
+                .GetByEmailAsync(dto.Email);
 
         if (existingEmail is not null)
         {
@@ -68,7 +79,9 @@ public class UsuarioService : IUsuarioService
                 nameof(dto));
         }
 
-        var rol = await _rolRepository.GetByIdAsync(dto.RolId);
+        var rol =
+            await _rolRepository.GetByIdAsync(
+                dto.RolId);
 
         if (rol is null)
         {
@@ -77,7 +90,8 @@ public class UsuarioService : IUsuarioService
                 nameof(dto));
         }
 
-        var (hash, salt) = _passwordHasher.Hash(dto.Password);
+        var (hash, salt) =
+            _passwordHasher.Hash(dto.Password);
 
         var usuario = new Usuario
         {
@@ -90,63 +104,167 @@ public class UsuarioService : IUsuarioService
             Activo = true
         };
 
-        usuario.Id = await _usuarioRepository.CreateAsync(usuario);
+        usuario.Id =
+            await _usuarioRepository.CreateAsync(
+                usuario);
 
         return await ToDtoAsync(usuario);
     }
 
-    public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto dto)
+    public async Task<LoginResponseDto?> LoginAsync(
+        LoginRequestDto dto)
     {
-        var usuario = await _usuarioRepository.GetByEmailAsync(dto.Email);
+        ArgumentNullException.ThrowIfNull(dto);
+
+        var usuario =
+            await _usuarioRepository.GetByEmailAsync(
+                dto.Email);
 
         if (usuario is null || !usuario.Activo)
         {
             return null;
         }
 
-        var isValidPassword = _passwordHasher.Verify(
-            dto.Password,
-            usuario.PasswordHash,
-            usuario.PasswordSalt);
+        var isValidPassword =
+            _passwordHasher.Verify(
+                dto.Password,
+                usuario.PasswordHash,
+                usuario.PasswordSalt);
 
         if (!isValidPassword)
         {
             return null;
         }
 
-        var userDto = await ToDtoAsync(usuario);
+        var userDto =
+            await ToDtoAsync(usuario);
 
-        var generatedToken = _tokenGenerator.Generate(
-            usuario.Id,
-            usuario.NombreCompleto,
-            usuario.Email,
-            userDto.RolNombre);
+        var generatedToken =
+            _tokenGenerator.Generate(
+                usuario.Id,
+                usuario.NombreCompleto,
+                usuario.Email,
+                userDto.RolNombre);
 
         return new LoginResponseDto
         {
             Token = generatedToken.AccessToken,
-            ExpiresAtUtc = generatedToken.ExpiresAtUtc,
+            ExpiresAtUtc =
+                generatedToken.ExpiresAtUtc,
             User = userDto
         };
     }
 
-    public Task<bool> ToggleStatusAsync(int id)
+    public Task<bool> ToggleStatusAsync(
+        int id)
     {
-        return _usuarioRepository.ToggleStatusAsync(id);
+        return _usuarioRepository
+            .ToggleStatusAsync(id);
     }
 
-    private async Task<UsuarioDto> ToDtoAsync(Usuario usuario)
+    public async Task ChangePasswordAsync(
+        ChangePasswordDto dto)
     {
-        var rol = await _rolRepository.GetByIdAsync(usuario.RolId);
+        ArgumentNullException.ThrowIfNull(dto);
+
+        if (dto.UserId <= 0)
+        {
+            throw new ArgumentException(
+                "El identificador del usuario no es válido.",
+                nameof(dto));
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                dto.CurrentPassword))
+        {
+            throw new ArgumentException(
+                "La contraseña actual es obligatoria.",
+                nameof(dto));
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                dto.NewPassword))
+        {
+            throw new ArgumentException(
+                "La nueva contraseña es obligatoria.",
+                nameof(dto));
+        }
+
+        if (dto.NewPassword.Length < 8)
+        {
+            throw new ArgumentException(
+                "La nueva contraseña debe tener al menos 8 caracteres.",
+                nameof(dto));
+        }
+
+        if (string.Equals(
+                dto.CurrentPassword,
+                dto.NewPassword,
+                StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "La nueva contraseña debe ser diferente de la contraseña actual.",
+                nameof(dto));
+        }
+
+        var usuario =
+            await _usuarioRepository.GetByIdAsync(
+                dto.UserId);
+
+        if (usuario is null || !usuario.Activo)
+        {
+            throw new KeyNotFoundException(
+                "El usuario no existe o se encuentra inactivo.");
+        }
+
+        var currentPasswordIsValid =
+            _passwordHasher.Verify(
+                dto.CurrentPassword,
+                usuario.PasswordHash,
+                usuario.PasswordSalt);
+
+        if (!currentPasswordIsValid)
+        {
+            throw new UnauthorizedAccessException(
+                "La contraseña actual es incorrecta.");
+        }
+
+        var (newHash, newSalt) =
+            _passwordHasher.Hash(
+                dto.NewPassword);
+
+        var updated =
+            await _usuarioRepository
+                .UpdatePasswordAsync(
+                    usuario.Id,
+                    newHash,
+                    newSalt);
+
+        if (!updated)
+        {
+            throw new InvalidOperationException(
+                "No fue posible actualizar la contraseña.");
+        }
+    }
+
+    private async Task<UsuarioDto> ToDtoAsync(
+        Usuario usuario)
+    {
+        var rol =
+            await _rolRepository.GetByIdAsync(
+                usuario.RolId);
 
         return new UsuarioDto
         {
             Id = usuario.Id,
-            NombreUsuario = usuario.NombreUsuario,
-            NombreCompleto = usuario.NombreCompleto,
+            NombreUsuario =
+                usuario.NombreUsuario,
+            NombreCompleto =
+                usuario.NombreCompleto,
             Email = usuario.Email,
             RolId = usuario.RolId,
-            RolNombre = rol?.Nombre ?? string.Empty,
+            RolNombre =
+                rol?.Nombre ?? string.Empty,
             Activo = usuario.Activo
         };
     }

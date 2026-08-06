@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.Data.SqlClient;
 using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Domain.Entities;
@@ -24,7 +25,8 @@ public sealed class UsuarioRepository : IUsuarioRepository
 
     private readonly IDbConnectionFactory _connectionFactory;
 
-    public UsuarioRepository(IDbConnectionFactory connectionFactory)
+    public UsuarioRepository(
+        IDbConnectionFactory connectionFactory)
     {
         _connectionFactory = connectionFactory;
     }
@@ -33,14 +35,17 @@ public sealed class UsuarioRepository : IUsuarioRepository
     {
         var usuarios = new List<Usuario>();
 
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             $"{SelectUsuario} ORDER BY Id DESC",
             connection);
 
         await connection.OpenAsync();
 
-        using var reader = await command.ExecuteReaderAsync();
+        using var reader =
+            await command.ExecuteReaderAsync();
 
         while (await reader.ReadAsync())
         {
@@ -52,16 +57,21 @@ public sealed class UsuarioRepository : IUsuarioRepository
 
     public async Task<Usuario?> GetByIdAsync(int id)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             $"{SelectUsuario} WHERE Id = @Id",
             connection);
 
-        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters
+            .Add("@Id", SqlDbType.Int)
+            .Value = id;
 
         await connection.OpenAsync();
 
-        using var reader = await command.ExecuteReaderAsync();
+        using var reader =
+            await command.ExecuteReaderAsync();
 
         return await reader.ReadAsync()
             ? Map(reader)
@@ -71,45 +81,63 @@ public sealed class UsuarioRepository : IUsuarioRepository
     public async Task<Usuario?> GetByNombreUsuarioAsync(
         string nombreUsuario)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             $"{SelectUsuario} WHERE NombreUsuario = @NombreUsuario",
             connection);
 
-        command.Parameters.AddWithValue(
-            "@NombreUsuario",
-            nombreUsuario);
+        command.Parameters
+            .Add(
+                "@NombreUsuario",
+                SqlDbType.NVarChar,
+                100)
+            .Value = nombreUsuario;
 
         await connection.OpenAsync();
 
-        using var reader = await command.ExecuteReaderAsync();
+        using var reader =
+            await command.ExecuteReaderAsync();
 
         return await reader.ReadAsync()
             ? Map(reader)
             : null;
     }
 
-    public async Task<Usuario?> GetByEmailAsync(string email)
+    public async Task<Usuario?> GetByEmailAsync(
+        string email)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             $"{SelectUsuario} WHERE Email = @Email",
             connection);
 
-        command.Parameters.AddWithValue("@Email", email);
+        command.Parameters
+            .Add(
+                "@Email",
+                SqlDbType.NVarChar,
+                150)
+            .Value = email;
 
         await connection.OpenAsync();
 
-        using var reader = await command.ExecuteReaderAsync();
+        using var reader =
+            await command.ExecuteReaderAsync();
 
         return await reader.ReadAsync()
             ? Map(reader)
             : null;
     }
 
-    public async Task<int> CreateAsync(Usuario usuario)
+    public async Task<int> CreateAsync(
+        Usuario usuario)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             """
             INSERT INTO dbo.Usuarios
@@ -137,40 +165,59 @@ public sealed class UsuarioRepository : IUsuarioRepository
             """,
             connection);
 
-        command.Parameters.AddWithValue(
-            "@NombreUsuario",
-            usuario.NombreUsuario);
+        command.Parameters
+            .Add(
+                "@NombreUsuario",
+                SqlDbType.NVarChar,
+                100)
+            .Value = usuario.NombreUsuario;
 
-        command.Parameters.AddWithValue(
-            "@NombreCompleto",
-            usuario.NombreCompleto);
+        command.Parameters
+            .Add(
+                "@NombreCompleto",
+                SqlDbType.NVarChar,
+                150)
+            .Value = usuario.NombreCompleto;
 
-        command.Parameters.AddWithValue(
-            "@Email",
-            usuario.Email);
+        command.Parameters
+            .Add(
+                "@Email",
+                SqlDbType.NVarChar,
+                150)
+            .Value = usuario.Email;
 
-        command.Parameters.AddWithValue(
-            "@PasswordHash",
-            usuario.PasswordHash);
+        command.Parameters
+            .Add(
+                "@PasswordHash",
+                SqlDbType.VarBinary,
+                usuario.PasswordHash.Length)
+            .Value = usuario.PasswordHash;
 
-        command.Parameters.AddWithValue(
-            "@PasswordSalt",
-            usuario.PasswordSalt);
+        command.Parameters
+            .Add(
+                "@PasswordSalt",
+                SqlDbType.VarBinary,
+                usuario.PasswordSalt.Length)
+            .Value = usuario.PasswordSalt;
 
-        command.Parameters.AddWithValue(
-            "@RolId",
-            usuario.RolId);
+        command.Parameters
+            .Add("@RolId", SqlDbType.Int)
+            .Value = usuario.RolId;
 
         await connection.OpenAsync();
 
-        var newId = await command.ExecuteScalarAsync();
+        var newId =
+            await command.ExecuteScalarAsync();
 
         return Convert.ToInt32(newId);
     }
 
-    public async Task<bool> ToggleStatusAsync(int id)
+    public async Task<bool> ToggleStatusAsync(
+        int id)
     {
-        using var connection = _connectionFactory.CreateConnection();
+        using var connection =
+            _connectionFactory.CreateConnection();
+
         using var command = new SqlCommand(
             """
             UPDATE dbo.Usuarios
@@ -180,31 +227,94 @@ public sealed class UsuarioRepository : IUsuarioRepository
                     ELSE 1
                 END,
                 FechaModificacion = SYSDATETIME()
-            WHERE Id = @Id
+            WHERE Id = @Id;
             """,
             connection);
 
-        command.Parameters.AddWithValue("@Id", id);
+        command.Parameters
+            .Add("@Id", SqlDbType.Int)
+            .Value = id;
 
         await connection.OpenAsync();
 
         return await command.ExecuteNonQueryAsync() > 0;
     }
 
-    private static Usuario Map(SqlDataReader reader)
+    public async Task<bool> UpdatePasswordAsync(
+        int id,
+        byte[] passwordHash,
+        byte[] passwordSalt)
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        using var command = new SqlCommand(
+            """
+            UPDATE dbo.Usuarios
+            SET
+                PasswordHash = @PasswordHash,
+                PasswordSalt = @PasswordSalt,
+                FechaModificacion = SYSDATETIME()
+            WHERE Id = @Id
+              AND Activo = 1;
+            """,
+            connection);
+
+        command.Parameters
+            .Add(
+                "@PasswordHash",
+                SqlDbType.VarBinary,
+                passwordHash.Length)
+            .Value = passwordHash;
+
+        command.Parameters
+            .Add(
+                "@PasswordSalt",
+                SqlDbType.VarBinary,
+                passwordSalt.Length)
+            .Value = passwordSalt;
+
+        command.Parameters
+            .Add("@Id", SqlDbType.Int)
+            .Value = id;
+
+        await connection.OpenAsync();
+
+        var affectedRows =
+            await command.ExecuteNonQueryAsync();
+
+        return affectedRows > 0;
+    }
+
+    private static Usuario Map(
+        SqlDataReader reader)
     {
         return new Usuario
         {
-            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+            Id = reader.GetInt32(
+                reader.GetOrdinal("Id")),
+
             NombreUsuario = reader.GetString(
                 reader.GetOrdinal("NombreUsuario")),
+
             NombreCompleto = reader.GetString(
                 reader.GetOrdinal("NombreCompleto")),
-            Email = reader.GetString(reader.GetOrdinal("Email")),
-            PasswordHash = (byte[])reader["PasswordHash"],
-            PasswordSalt = (byte[])reader["PasswordSalt"],
-            RolId = reader.GetInt32(reader.GetOrdinal("RolId")),
-            Activo = reader.GetBoolean(reader.GetOrdinal("Activo")),
+
+            Email = reader.GetString(
+                reader.GetOrdinal("Email")),
+
+            PasswordHash =
+                (byte[])reader["PasswordHash"],
+
+            PasswordSalt =
+                (byte[])reader["PasswordSalt"],
+
+            RolId = reader.GetInt32(
+                reader.GetOrdinal("RolId")),
+
+            Activo = reader.GetBoolean(
+                reader.GetOrdinal("Activo")),
+
             FechaCreacion = reader.GetDateTime(
                 reader.GetOrdinal("FechaCreacion"))
         };

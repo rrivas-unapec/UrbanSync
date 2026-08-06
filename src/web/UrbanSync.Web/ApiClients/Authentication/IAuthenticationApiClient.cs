@@ -11,4 +11,8 @@ public interface IAuthenticationApiClient
     Task<UserResponse?> RegisterAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default);
+
+    Task ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default);
 }

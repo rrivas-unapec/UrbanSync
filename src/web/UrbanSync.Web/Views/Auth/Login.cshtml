@@ -1,113 +1,214 @@
 @model UrbanSync.Web.ViewModels.LoginViewModel
 
 @{
-    ViewData["Title"] = "Iniciar sesión";
-    Layout = "_Layout";
+    Layout = null;
 }
 
-<div class="auth-card">
-    <div class="auth-card__header">
-        <h1 class="auth-card__title">
-            Iniciar sesión
-        </h1>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
 
-        <p class="auth-card__subtitle">
-            Ingresa tus credenciales para acceder a UrbanSync.
-        </p>
-    </div>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1" />
 
-    @if (TempData["RegistrationSuccess"] is string successMessage)
-    {
-        <div
-            class="alert alert-success"
-            role="alert">
-            @successMessage
-        </div>
-    }
+    <title>Iniciar sesión · UrbanSync</title>
 
-    <form
-        asp-controller="Auth"
-        asp-action="Login"
-        method="post"
-        novalidate>
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet" />
 
-        @Html.AntiForgeryToken()
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+        rel="stylesheet" />
 
-        <div
-            asp-validation-summary="ModelOnly"
-            class="alert alert-danger"
-            role="alert">
-        </div>
+    <link
+        href="~/css/admin.css"
+        rel="stylesheet"
+        asp-append-version="true" />
 
-        <div class="mb-3">
-            <label
-                asp-for="Email"
-                class="form-label">
-            </label>
+    <link
+        href="~/css/login.css"
+        rel="stylesheet"
+        asp-append-version="true" />
+</head>
 
-            <input
-                asp-for="Email"
-                class="form-control"
-                type="email"
-                autocomplete="email"
-                placeholder="correo@ejemplo.com" />
+<body class="login-body">
+    <main class="login-shell">
+        <partial name="_AuthHero" />
 
-            <span
-                asp-validation-for="Email"
-                class="text-danger">
-            </span>
-        </div>
+        <section class="login-panel">
+            <div class="login-panel-inner">
+                <header class="login-panel-header">
+                    <h1>Iniciar sesión</h1>
 
-        <div class="mb-3">
-            <label
-                asp-for="Password"
-                class="form-label">
-            </label>
+                    <p class="login-panel-sub">
+                        Accede a la plataforma de gestión urbana de UrbanSync.
+                    </p>
+                </header>
 
-            <input
-                asp-for="Password"
-                class="form-control"
-                type="password"
-                autocomplete="current-password"
-                placeholder="Ingresa tu contraseña" />
+                @if (TempData["RegistrationSuccess"] is string successMessage)
+                {
+                    <div
+                        class="alert alert-success login-alert"
+                        role="alert">
+                        <i class="bi bi-check-circle-fill"></i>
 
-            <span
-                asp-validation-for="Password"
-                class="text-danger">
-            </span>
-        </div>
+                        <span>@successMessage</span>
+                    </div>
+                }
 
-        <div class="form-check mb-4">
-            <input
-                asp-for="RememberMe"
-                class="form-check-input" />
+                <form
+                    asp-controller="Auth"
+                    asp-action="Login"
+                    method="post"
+                    class="login-form">
 
-            <label
-                asp-for="RememberMe"
-                class="form-check-label">
-            </label>
-        </div>
+                    @Html.AntiForgeryToken()
 
-        <button
-            type="submit"
-            class="btn btn-dark w-100">
-            Iniciar sesión
-        </button>
-    </form>
+                    <div
+                        asp-validation-summary="ModelOnly"
+                        class="alert alert-danger login-validation-summary"
+                        role="alert">
+                    </div>
 
-    <div class="text-center mt-4">
-        <span>
-            ¿No tienes una cuenta?
-        </span>
+                    <div class="mb-3">
+                        <label
+                            asp-for="Email"
+                            class="form-label">
+                            Correo electrónico
+                        </label>
 
-        <a
-            asp-controller="Auth"
-            asp-action="Register">
-            Regístrate
-        </a>
-    </div>
-</div>
+                        <div class="login-input-field">
+                            <i
+                                class="bi bi-envelope login-input-icon"
+                                aria-hidden="true">
+                            </i>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+                            <input
+                                asp-for="Email"
+                                class="form-control"
+                                type="email"
+                                placeholder="usuario@urbansync.com"
+                                autocomplete="username"
+                                autofocus />
+                        </div>
+
+                        <span
+                            asp-validation-for="Email"
+                            class="text-danger login-field-error">
+                        </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label
+                            asp-for="Password"
+                            class="form-label">
+                            Contraseña
+                        </label>
+
+                        <div class="login-password-field">
+                            <i
+                                class="bi bi-lock login-input-icon"
+                                aria-hidden="true">
+                            </i>
+
+                            <input
+                                asp-for="Password"
+                                class="form-control"
+                                type="password"
+                                placeholder="Ingresa tu contraseña"
+                                autocomplete="current-password" />
+
+                            <button
+                                type="button"
+                                class="login-password-toggle"
+                                aria-label="Mostrar contraseña"
+                                aria-pressed="false">
+                                <i
+                                    class="bi bi-eye"
+                                    aria-hidden="true">
+                                </i>
+                            </button>
+                        </div>
+
+                        <span
+                            asp-validation-for="Password"
+                            class="text-danger login-field-error">
+                        </span>
+                    </div>
+
+                    <div class="login-form-options">
+                        <div class="form-check">
+                            <input
+                                asp-for="RememberMe"
+                                class="form-check-input" />
+
+                            <label
+                                asp-for="RememberMe"
+                                class="form-check-label">
+                                Mantener sesión iniciada
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="btn login-submit w-100">
+                        <span>Iniciar sesión</span>
+
+                        <i
+                            class="bi bi-arrow-right"
+                            aria-hidden="true">
+                        </i>
+                    </button>
+                </form>
+
+                <div class="login-demo-box">
+                    <p class="login-demo-title">
+                        <i
+                            class="bi bi-key-fill"
+                            aria-hidden="true">
+                        </i>
+
+                        Credenciales de demostración
+                    </p>
+
+                    <p class="login-demo-line">
+                        Correo:
+                        <code>admin@urbansync.com</code>
+                    </p>
+
+                    <p class="login-demo-line">
+                        Contraseña:
+                        <code>UrbanSync@2026</code>
+                    </p>
+                </div>
+
+                <div class="login-register-link">
+                    <span>¿No tienes una cuenta?</span>
+
+                    <a
+                        asp-controller="Auth"
+                        asp-action="Register">
+                        Crear cuenta ciudadana
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+    <script
+        src="~/js/login.js"
+        asp-append-version="true">
+    </script>
+</body>
+</html>

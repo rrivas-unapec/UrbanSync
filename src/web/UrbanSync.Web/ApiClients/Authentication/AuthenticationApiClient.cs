@@ -7,7 +7,8 @@ public sealed class AuthenticationApiClient
     : ApiClientBase,
       IAuthenticationApiClient
 {
-    public AuthenticationApiClient(HttpClient httpClient)
+    public AuthenticationApiClient(
+        HttpClient httpClient)
         : base(httpClient)
     {
     }
@@ -16,18 +17,32 @@ public sealed class AuthenticationApiClient
         LoginRequest request,
         CancellationToken cancellationToken = default)
     {
-        return PostAsync<LoginRequest, LoginResponse>(
-            "api/auth/login",
-            request,
-            cancellationToken);
+        return PostAsync<
+            LoginRequest,
+            LoginResponse>(
+                "api/auth/login",
+                request,
+                cancellationToken);
     }
 
     public Task<UserResponse?> RegisterAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default)
     {
-        return PostAsync<RegisterRequest, UserResponse>(
-            "api/auth/register",
+        return PostAsync<
+            RegisterRequest,
+            UserResponse>(
+                "api/auth/register",
+                request,
+                cancellationToken);
+    }
+
+    public Task ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PostAsync(
+            "api/auth/change-password",
             request,
             cancellationToken);
     }

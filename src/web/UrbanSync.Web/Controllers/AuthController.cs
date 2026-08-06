@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,8 @@ public sealed class AuthController : Controller
     private readonly IAuthenticationApiClient
         _authenticationApiClient;
 
-    private readonly ActivityLogger _activityLogger;
+    private readonly ActivityLogger
+        _activityLogger;
 
     public AuthController(
         IAuthenticationApiClient authenticationApiClient,
@@ -24,9 +26,11 @@ public sealed class AuthController : Controller
         _authenticationApiClient =
             authenticationApiClient;
 
-        _activityLogger = activityLogger;
+        _activityLogger =
+            activityLogger;
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public IActionResult Login()
     {
@@ -40,6 +44,7 @@ public sealed class AuthController : Controller
         return View();
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(
@@ -54,16 +59,20 @@ public sealed class AuthController : Controller
         try
         {
             var response =
-                await _authenticationApiClient.LoginAsync(
-                    new LoginRequest
-                    {
-                        Email = model.Email.Trim(),
-                        Password = model.Password
-                    },
-                    cancellationToken);
+                await _authenticationApiClient
+                    .LoginAsync(
+                        new LoginRequest
+                        {
+                            Email =
+                                model.Email.Trim(),
+                            Password =
+                                model.Password
+                        },
+                        cancellationToken);
 
             if (response is null ||
-                string.IsNullOrWhiteSpace(response.Token))
+                string.IsNullOrWhiteSpace(
+                    response.Token))
             {
                 ModelState.AddModelError(
                     string.Empty,
@@ -95,10 +104,11 @@ public sealed class AuthController : Controller
                     response.Token)
             };
 
-            var identity = new ClaimsIdentity(
-                claims,
-                CookieAuthenticationDefaults
-                    .AuthenticationScheme);
+            var identity =
+                new ClaimsIdentity(
+                    claims,
+                    CookieAuthenticationDefaults
+                        .AuthenticationScheme);
 
             var principal =
                 new ClaimsPrincipal(identity);
@@ -109,9 +119,13 @@ public sealed class AuthController : Controller
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = model.RememberMe,
+                    IsPersistent =
+                        model.RememberMe,
+
                     AllowRefresh = false,
-                    ExpiresUtc = response.ExpiresAtUtc
+
+                    ExpiresUtc =
+                        response.ExpiresAtUtc
                 });
 
             await _activityLogger.LogAsync(
@@ -132,6 +146,7 @@ public sealed class AuthController : Controller
         }
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public IActionResult Register()
     {
@@ -145,6 +160,7 @@ public sealed class AuthController : Controller
         return View();
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(
@@ -158,15 +174,20 @@ public sealed class AuthController : Controller
 
         try
         {
-            await _authenticationApiClient.RegisterAsync(
-                new RegisterRequest
-                {
-                    NombreCompleto =
-                        model.FullName.Trim(),
-                    Email = model.Email.Trim(),
-                    Password = model.Password
-                },
-                cancellationToken);
+            await _authenticationApiClient
+                .RegisterAsync(
+                    new RegisterRequest
+                    {
+                        NombreCompleto =
+                            model.FullName.Trim(),
+
+                        Email =
+                            model.Email.Trim(),
+
+                        Password =
+                            model.Password
+                    },
+                    cancellationToken);
 
             await _activityLogger.LogAsync(
                 "Registro",
@@ -175,7 +196,8 @@ public sealed class AuthController : Controller
             TempData["RegistrationSuccess"] =
                 "Tu cuenta fue creada correctamente. Ya puedes iniciar sesión.";
 
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction(
+                nameof(Login));
         }
         catch (UrbanSyncApiException exception)
         {
@@ -187,6 +209,76 @@ public sealed class AuthController : Controller
         }
     }
 
+    [Authorize]
+    [HttpGet]
+    public IActionResult ChangePassword()
+    {
+        return View(
+            new ChangePasswordViewModel());
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(
+        ChangePasswordViewModel model,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        if (string.Equals(
+                model.CurrentPassword,
+                model.NewPassword,
+                StringComparison.Ordinal))
+        {
+            ModelState.AddModelError(
+                nameof(model.NewPassword),
+                "La nueva contraseña debe ser diferente de la contraseña actual.");
+
+            return View(model);
+        }
+
+        try
+        {
+            await _authenticationApiClient
+                .ChangePasswordAsync(
+                    new ChangePasswordRequest
+                    {
+                        CurrentPassword =
+                            model.CurrentPassword,
+
+                        NewPassword =
+                            model.NewPassword,
+
+                        ConfirmNewPassword =
+                            model.ConfirmNewPassword
+                    },
+                    cancellationToken);
+
+            await _activityLogger.LogAsync(
+                "Cambio de contraseña",
+                "El usuario cambió su contraseña.");
+
+            TempData["PasswordChanged"] =
+                "Tu contraseña fue actualizada correctamente.";
+
+            return RedirectToAction(
+                nameof(ChangePassword));
+        }
+        catch (UrbanSyncApiException exception)
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                exception.Message);
+
+            return View(model);
+        }
+    }
+
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()

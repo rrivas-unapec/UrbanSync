@@ -13,4 +13,6 @@ public interface IUsuarioService
     Task<LoginResponseDto?> LoginAsync(LoginRequestDto dto);
 
     Task<bool> ToggleStatusAsync(int id);
+
+    Task ChangePasswordAsync(ChangePasswordDto dto);
 }
