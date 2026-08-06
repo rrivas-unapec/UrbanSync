@@ -22,10 +22,25 @@ public static class DependencyInjection
         services.AddSingleton<IDbConnectionFactory>(
             new SqlConnectionFactory(connectionString));
 
-        services.AddScoped<IRolRepository, RolRepository>();
-        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<
+            IRolRepository,
+            RolRepository>();
 
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<
+            IUsuarioRepository,
+            UsuarioRepository>();
+
+        services.AddScoped<
+            IIncidentRepository,
+            IncidentRepository>();
+
+        services.AddScoped<
+            IAuditRepository,
+            AuditRepository>();
+
+        services.AddScoped<
+            IPasswordHasher,
+            PasswordHasher>();
 
         services
             .AddOptions<JwtOptions>()
@@ -34,23 +49,29 @@ public static class DependencyInjection
                     JwtOptions.SectionName))
             .Validate(
                 options =>
-                    !string.IsNullOrWhiteSpace(options.Issuer),
+                    !string.IsNullOrWhiteSpace(
+                        options.Issuer),
                 "Jwt:Issuer es obligatorio.")
             .Validate(
                 options =>
-                    !string.IsNullOrWhiteSpace(options.Audience),
+                    !string.IsNullOrWhiteSpace(
+                        options.Audience),
                 "Jwt:Audience es obligatorio.")
             .Validate(
                 options =>
-                    !string.IsNullOrWhiteSpace(options.SecretKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.SecretKey) &&
                     options.SecretKey.Length >= 32,
                 "Jwt:SecretKey debe contener al menos 32 caracteres.")
             .Validate(
-                options => options.ExpirationMinutes > 0,
+                options =>
+                    options.ExpirationMinutes > 0,
                 "Jwt:ExpirationMinutes debe ser mayor que cero.")
             .ValidateOnStart();
 
-        services.AddSingleton<ITokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<
+            ITokenGenerator,
+            JwtTokenGenerator>();
 
         return services;
     }
