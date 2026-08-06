@@ -32,6 +32,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    env:
+      ConnectionStrings__UrbanSyncDb: >
+        Server=localhost;
+        Initial Catalog=UrbanSyncDB;
+        User ID=ci-user;
+        Password=CiPassword123!;
+        Encrypt=False;
+        TrustServerCertificate=True;
+
+      Jwt__Issuer: UrbanSync.Api
+      Jwt__Audience: UrbanSync.Clients
+      Jwt__SecretKey: UrbanSyncIntegrationTestsSecretKeyMinimum32Characters
+      Jwt__ExpirationMinutes: "60"
+
+      Cors__AllowedOrigins__0: http://localhost
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,18 +61,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: >
-            nuget-${{ runner.os }}-${{
-              hashFiles(
-                'global.json',
-                'Directory.Packages.props',
-                'Directory.Build.props',
-                'src/backend/**/*.csproj',
-                'tests/backend/**/*.csproj'
-              )
-            }}
+          key: nuget-backend-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', 'src/backend/**/*.csproj', 'tests/backend/**/*.csproj') }}
           restore-keys: |
-            nuget-${{ runner.os }}-
+            nuget-backend-${{ runner.os }}-
 
       - name: Restore backend dependencies
         run: dotnet restore src/backend/UrbanSync.sln
@@ -68,14 +75,23 @@ jobs:
           --configuration Release
           --no-restore
 
-      - name: Run backend tests
+      - name: Run application unit tests
         run: >
           dotnet test
-          src/backend/UrbanSync.sln
+          tests/backend/UrbanSync.Application.UnitTests/UrbanSync.Application.UnitTests.csproj
           --configuration Release
           --no-build
-          --logger "trx;LogFileName=backend-tests.trx"
-          --results-directory TestResults/backend
+          --logger "trx;LogFileName=application-unit-tests.trx"
+          --results-directory TestResults/backend/unit
+
+      - name: Run API integration tests
+        run: >
+          dotnet test
+          tests/backend/UrbanSync.Api.IntegrationTests/UrbanSync.Api.IntegrationTests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=api-integration-tests.trx"
+          --results-directory TestResults/backend/integration
 
       - name: Upload backend test results
         if: always()
@@ -104,15 +120,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: >
-            nuget-web-${{ runner.os }}-${{
-              hashFiles(
-                'global.json',
-                'Directory.Packages.props',
-                'Directory.Build.props',
-                'src/web/**/*.csproj'
-              )
-            }}
+          key: nuget-web-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', 'src/web/**/*.csproj') }}
           restore-keys: |
             nuget-web-${{ runner.os }}-
 
