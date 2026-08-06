@@ -9,10 +9,22 @@ public static class ApplicationBuilderExtensions
     {
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        if (app.Environment.IsDevelopment())
+        var swaggerEnabled =
+            app.Environment.IsDevelopment() ||
+            app.Configuration.GetValue<bool>("Swagger:Enabled");
+
+        if (swaggerEnabled)
         {
             app.UseSwagger();
-            app.UseSwaggerUI();
+
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint(
+                    "/swagger/v1/swagger.json",
+                    "UrbanSync API v1");
+
+                options.RoutePrefix = "swagger";
+            });
         }
 
         app.UseCors(ServiceCollectionExtensions.CorsPolicyName);
