@@ -1,9 +1,24 @@
 using UrbanSync.Application.Common.Interfaces.Persistence;
+using UrbanSync.Application.Features.Audit;
 
 namespace UrbanSync.Application.Features.Incidents;
 
 public sealed class IncidentService : IIncidentService
 {
+    private const string AuditEntity = "Incidencias";
+
+    private const string AuditActionCreate =
+        "Reporte de incidencia";
+
+    private const string AuditActionStatus =
+        "Cambio de estado";
+
+    private const string AuditActionTriage = "Triage";
+
+    private const string AuditEmptyValue = "—";
+
+    private const int AuditDetailMaxLength = 400;
+
     private static readonly HashSet<string> AllowedPriorities =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -26,11 +41,14 @@ public sealed class IncidentService : IIncidentService
         };
 
     private readonly IIncidentRepository _incidentRepository;
+    private readonly IAuditService _auditService;
 
     public IncidentService(
-        IIncidentRepository incidentRepository)
+        IIncidentRepository incidentRepository,
+        IAuditService auditService)
     {
         _incidentRepository = incidentRepository;
+        _auditService = auditService;
     }
 
     public Task<IReadOnlyList<IncidentDto>> GetAllAsync(
@@ -105,14 +123,29 @@ public sealed class IncidentService : IIncidentService
                 incidentId,
                 cancellationToken);
 
-        return createdIncident
-            ?? throw new InvalidOperationException(
+        if (createdIncident is null)
+        {
+            throw new InvalidOperationException(
                 "La incidencia fue creada, pero no pudo recuperarse.");
+        }
+
+        await RegisterAuditAsync(
+            reportingUserId,
+            AuditActionCreate,
+            createdIncident.Id,
+            BuildDetail(
+                $"Incidencia {createdIncident.CodigoCaso} registrada.",
+                Change("Estado", null, createdIncident.Estado),
+                Change("Prioridad", null, createdIncident.Prioridad)),
+            cancellationToken);
+
+        return createdIncident;
     }
 
     public async Task<IncidentDto?> UpdateStatusAsync(
         int id,
         UpdateIncidentStatusDto incident,
+        int actingUserId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(incident);
@@ -136,6 +169,15 @@ public sealed class IncidentService : IIncidentService
                 nameof(incident));
         }
 
+        var previous = await _incidentRepository.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (previous is null)
+        {
+            return null;
+        }
+
         var updated =
             await _incidentRepository.UpdateStatusAsync(
                 id,
@@ -148,14 +190,36 @@ public sealed class IncidentService : IIncidentService
             return null;
         }
 
-        return await _incidentRepository.GetByIdAsync(
+        var current = await _incidentRepository.GetByIdAsync(
             id,
             cancellationToken);
+
+        if (current is not null)
+        {
+            await RegisterAuditAsync(
+                actingUserId,
+                AuditActionStatus,
+                current.Id,
+                BuildDetail(
+                    $"Incidencia {current.CodigoCaso}.",
+                    Change(
+                        "Estado",
+                        previous.Estado,
+                        current.Estado),
+                    Change(
+                        "Institución asignada",
+                        previous.InstitucionAsignada,
+                        current.InstitucionAsignada)),
+                cancellationToken);
+        }
+
+        return current;
     }
 
     public async Task<IncidentDto?> TriageAsync(
         int id,
         TriageIncidentDto incident,
+        int actingUserId,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(incident);
@@ -197,6 +261,15 @@ public sealed class IncidentService : IIncidentService
         var resultingStatus = ResolveTriageStatus(
             incident.Accion);
 
+        var previous = await _incidentRepository.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (previous is null)
+        {
+            return null;
+        }
+
         var updated = await _incidentRepository.TriageAsync(
             id,
             incident,
@@ -208,9 +281,100 @@ public sealed class IncidentService : IIncidentService
             return null;
         }
 
-        return await _incidentRepository.GetByIdAsync(
+        var current = await _incidentRepository.GetByIdAsync(
             id,
             cancellationToken);
+
+        if (current is not null)
+        {
+            await RegisterAuditAsync(
+                actingUserId,
+                AuditActionTriage,
+                current.Id,
+                BuildDetail(
+                    $"Incidencia {current.CodigoCaso} analizada.",
+                    Change(
+                        "Estado",
+                        previous.Estado,
+                        current.Estado),
+                    Change(
+                        "Prioridad",
+                        previous.Prioridad,
+                        current.Prioridad),
+                    Change(
+                        "Tipo",
+                        previous.TipoIncidencia,
+                        current.TipoIncidencia),
+                    Change(
+                        "Jurisdicción",
+                        previous.Jurisdiccion,
+                        current.Jurisdiccion)),
+                cancellationToken);
+        }
+
+        return current;
+    }
+
+    private Task RegisterAuditAsync(
+        int actingUserId,
+        string action,
+        int incidentId,
+        string detail,
+        CancellationToken cancellationToken)
+    {
+        return _auditService.CreateAsync(
+            new CreateAuditDto
+            {
+                UserId = actingUserId > 0
+                    ? actingUserId
+                    : null,
+                Action = action,
+                Entity = AuditEntity,
+                EntityId = incidentId,
+                Detail = detail
+            },
+            cancellationToken);
+    }
+
+    /// Convención compartida con los clientes: cada cambio se serializa como
+    /// `Campo: antes → después`, separados por `;`, usando `—` cuando el valor
+    /// no existe. Permite reconstruir un diff sin columnas adicionales.
+    private static string? Change(
+        string field,
+        string? before,
+        string? after)
+    {
+        var normalizedBefore = NormalizeOptionalValue(before);
+        var normalizedAfter = NormalizeOptionalValue(after);
+
+        if (string.Equals(
+                normalizedBefore,
+                normalizedAfter,
+                StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return $"{field}: " +
+            $"{normalizedBefore ?? AuditEmptyValue} → " +
+            $"{normalizedAfter ?? AuditEmptyValue}";
+    }
+
+    private static string BuildDetail(
+        string summary,
+        params string?[] changes)
+    {
+        var applied = changes
+            .Where(change => change is not null)
+            .ToArray();
+
+        var detail = applied.Length == 0
+            ? summary
+            : $"{summary} {string.Join("; ", applied)}";
+
+        return detail.Length <= AuditDetailMaxLength
+            ? detail
+            : detail[..AuditDetailMaxLength];
     }
 
     private static void ValidateCreateIncident(

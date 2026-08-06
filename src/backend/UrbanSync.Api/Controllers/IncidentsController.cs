@@ -143,6 +143,7 @@ public sealed class IncidentsController : ControllerBase
                     InstitucionAsignadaId =
                         request.InstitucionAsignadaId
                 },
+                GetAuthenticatedUserId(),
                 cancellationToken);
 
         if (updatedIncident is null)
@@ -184,6 +185,7 @@ public sealed class IncidentsController : ControllerBase
                     JurisdiccionId =
                         request.JurisdiccionId
                 },
+                GetAuthenticatedUserId(),
                 cancellationToken);
 
         if (updatedIncident is null)
