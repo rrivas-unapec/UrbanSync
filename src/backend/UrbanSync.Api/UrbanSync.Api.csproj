@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference
+      Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.Configuration.Binder" />
+
+    <PackageReference
+      Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference
+      Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
+
+    <ProjectReference
+      Include="..\UrbanSync.Infrastructure\UrbanSync.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

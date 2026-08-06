@@ -1,0 +1,113 @@
+@model UrbanSync.Web.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = "_Layout";
+}
+
+<div class="auth-card">
+    <div class="auth-card__header">
+        <h1 class="auth-card__title">
+            Iniciar sesión
+        </h1>
+
+        <p class="auth-card__subtitle">
+            Ingresa tus credenciales para acceder a UrbanSync.
+        </p>
+    </div>
+
+    @if (TempData["RegistrationSuccess"] is string successMessage)
+    {
+        <div
+            class="alert alert-success"
+            role="alert">
+            @successMessage
+        </div>
+    }
+
+    <form
+        asp-controller="Auth"
+        asp-action="Login"
+        method="post"
+        novalidate>
+
+        @Html.AntiForgeryToken()
+
+        <div
+            asp-validation-summary="ModelOnly"
+            class="alert alert-danger"
+            role="alert">
+        </div>
+
+        <div class="mb-3">
+            <label
+                asp-for="Email"
+                class="form-label">
+            </label>
+
+            <input
+                asp-for="Email"
+                class="form-control"
+                type="email"
+                autocomplete="email"
+                placeholder="correo@ejemplo.com" />
+
+            <span
+                asp-validation-for="Email"
+                class="text-danger">
+            </span>
+        </div>
+
+        <div class="mb-3">
+            <label
+                asp-for="Password"
+                class="form-label">
+            </label>
+
+            <input
+                asp-for="Password"
+                class="form-control"
+                type="password"
+                autocomplete="current-password"
+                placeholder="Ingresa tu contraseña" />
+
+            <span
+                asp-validation-for="Password"
+                class="text-danger">
+            </span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input
+                asp-for="RememberMe"
+                class="form-check-input" />
+
+            <label
+                asp-for="RememberMe"
+                class="form-check-label">
+            </label>
+        </div>
+
+        <button
+            type="submit"
+            class="btn btn-dark w-100">
+            Iniciar sesión
+        </button>
+    </form>
+
+    <div class="text-center mt-4">
+        <span>
+            ¿No tienes una cuenta?
+        </span>
+
+        <a
+            asp-controller="Auth"
+            asp-action="Register">
+            Regístrate
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

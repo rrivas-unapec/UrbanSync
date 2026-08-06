@@ -1,0 +1,234 @@
+name: UrbanSync CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urbansync-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      ConnectionStrings__UrbanSyncDb: >
+        Server=localhost;
+        Initial Catalog=UrbanSyncDB;
+        User ID=ci-user;
+        Password=CiPassword123!;
+        Encrypt=False;
+        TrustServerCertificate=True;
+
+      Jwt__Issuer: UrbanSync.Api
+      Jwt__Audience: UrbanSync.Clients
+      Jwt__SecretKey: UrbanSyncIntegrationTestsSecretKeyMinimum32Characters
+      Jwt__ExpirationMinutes: "60"
+
+      Cors__AllowedOrigins__0: http://localhost
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-backend-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', 'src/backend/**/*.csproj', 'tests/backend/**/*.csproj') }}
+          restore-keys: |
+            nuget-backend-${{ runner.os }}-
+
+      - name: Restore backend dependencies
+        run: dotnet restore src/backend/UrbanSync.sln
+
+      - name: Build backend
+        run: >
+          dotnet build
+          src/backend/UrbanSync.sln
+          --configuration Release
+          --no-restore
+
+      - name: Run application unit tests
+        run: >
+          dotnet test
+          tests/backend/UrbanSync.Application.UnitTests/UrbanSync.Application.UnitTests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=application-unit-tests.trx"
+          --results-directory TestResults/backend/unit
+
+      - name: Run API integration tests
+        run: >
+          dotnet test
+          tests/backend/UrbanSync.Api.IntegrationTests/UrbanSync.Api.IntegrationTests.csproj
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=api-integration-tests.trx"
+          --results-directory TestResults/backend/integration
+
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults/backend
+          if-no-files-found: warn
+          retention-days: 14
+
+  web:
+    name: Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-web-${{ runner.os }}-${{ hashFiles('global.json', 'Directory.Packages.props', 'Directory.Build.props', 'src/web/**/*.csproj') }}
+          restore-keys: |
+            nuget-web-${{ runner.os }}-
+
+      - name: Restore Web dependencies
+        run: >
+          dotnet restore
+          src/web/UrbanSync.Web/UrbanSync.Web.csproj
+
+      - name: Build Web
+        run: >
+          dotnet build
+          src/web/UrbanSync.Web/UrbanSync.Web.csproj
+          --configuration Release
+          --no-restore
+
+      - name: Publish Web
+        run: >
+          dotnet publish
+          src/web/UrbanSync.Web/UrbanSync.Web.csproj
+          --configuration Release
+          --no-build
+          --output artifacts/web
+          /p:UseAppHost=false
+
+      - name: Upload Web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: urbansync-web
+          path: artifacts/web
+          if-no-files-found: error
+          retention-days: 14
+
+  mobile:
+    name: Flutter analysis and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: src/mobile
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter project
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Upload Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: urbansync-android-debug
+          path: src/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  docker:
+    name: Docker build validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      URBANSYNC_DB_CONNECTION: >
+        Server=localhost;
+        Initial Catalog=UrbanSyncDB;
+        User ID=ci-user;
+        Password=CiPassword123!;
+        Encrypt=False;
+        TrustServerCertificate=True;
+
+      JWT_ISSUER: UrbanSync.Api
+      JWT_AUDIENCE: UrbanSync.Clients
+      JWT_SECRET_KEY: UrbanSyncCiValidationSecretKeyMinimum32Characters
+      JWT_EXPIRATION_MINUTES: "60"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Show generated images
+        run: docker image ls --filter "reference=urbansync-*"

@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.Configuration.Abstractions" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference
+      Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
+
+    <ProjectReference
+      Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

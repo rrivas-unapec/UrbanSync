@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11806.211 stable
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Api", "UrbanSync.Api\UrbanSync.Api.csproj", "{E8F1971E-D35E-44D4-B1C4-AA2B438F5022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Domain", "UrbanSync.Domain\UrbanSync.Domain.csproj", "{E32D88FE-D9DD-4E1B-8C6C-D71B1ACDFD28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Infrastructure", "UrbanSync.Infrastructure\UrbanSync.Infrastructure.csproj", "{C748E5CC-DA0A-4DDA-B866-9F2DC0FE5152}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Application", "UrbanSync.Application\UrbanSync.Application.csproj", "{0BFD2A03-96E2-43B5-BB2F-A66DFD01AFC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Application.UnitTests", "..\..\tests\backend\UrbanSync.Application.UnitTests\UrbanSync.Application.UnitTests.csproj", "{08C8513A-C758-49A5-BE34-2F6A8589FB3B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UrbanSync.Api.IntegrationTests", "..\..\tests\backend\UrbanSync.Api.IntegrationTests\UrbanSync.Api.IntegrationTests.csproj", "{6E436B81-EB76-4505-BF47-527788FFE2FC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E8F1971E-D35E-44D4-B1C4-AA2B438F5022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8F1971E-D35E-44D4-B1C4-AA2B438F5022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8F1971E-D35E-44D4-B1C4-AA2B438F5022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8F1971E-D35E-44D4-B1C4-AA2B438F5022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E32D88FE-D9DD-4E1B-8C6C-D71B1ACDFD28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E32D88FE-D9DD-4E1B-8C6C-D71B1ACDFD28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E32D88FE-D9DD-4E1B-8C6C-D71B1ACDFD28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E32D88FE-D9DD-4E1B-8C6C-D71B1ACDFD28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C748E5CC-DA0A-4DDA-B866-9F2DC0FE5152}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C748E5CC-DA0A-4DDA-B866-9F2DC0FE5152}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C748E5CC-DA0A-4DDA-B866-9F2DC0FE5152}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C748E5CC-DA0A-4DDA-B866-9F2DC0FE5152}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BFD2A03-96E2-43B5-BB2F-A66DFD01AFC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BFD2A03-96E2-43B5-BB2F-A66DFD01AFC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BFD2A03-96E2-43B5-BB2F-A66DFD01AFC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BFD2A03-96E2-43B5-BB2F-A66DFD01AFC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08C8513A-C758-49A5-BE34-2F6A8589FB3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08C8513A-C758-49A5-BE34-2F6A8589FB3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08C8513A-C758-49A5-BE34-2F6A8589FB3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08C8513A-C758-49A5-BE34-2F6A8589FB3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E436B81-EB76-4505-BF47-527788FFE2FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E436B81-EB76-4505-BF47-527788FFE2FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E436B81-EB76-4505-BF47-527788FFE2FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E436B81-EB76-4505-BF47-527788FFE2FC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {95471F13-78C0-4042-A12F-D7AFCA20F43A}
+	EndGlobalSection
+EndGlobal
