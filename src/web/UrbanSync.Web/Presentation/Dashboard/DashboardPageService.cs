@@ -257,8 +257,8 @@ public sealed class DashboardPageService : IDashboardPageService
         try
         {
             var incidents = await _incidentsApiClient.GetAllAsync(
-                "Registrada",
-                cancellationToken);
+                status: "Registrada",
+                cancellationToken: cancellationToken);
 
             return new ModeracionViewModel
             {

@@ -1,3 +1,4 @@
+using UrbanSync.Web.ApiClients.Activity;
 using UrbanSync.Web.ApiClients.Authentication;
 using UrbanSync.Web.ApiClients.Incidents;
 using UrbanSync.Web.ApiClients.Reports;
@@ -30,27 +31,38 @@ public static class ApiClientServiceCollectionExtensions
 
         services.AddUrbanSyncHttpClient<
             IAuthenticationApiClient,
-            AuthenticationApiClient>(normalizedBaseUrl);
+            AuthenticationApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IActivityApiClient,
+            ActivityApiClient>(
+                normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
             IUsersApiClient,
-            UsersApiClient>(normalizedBaseUrl);
+            UsersApiClient>(
+                normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
             IRolesApiClient,
-            RolesApiClient>(normalizedBaseUrl);
+            RolesApiClient>(
+                normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
             IReportsApiClient,
-            ReportsApiClient>(normalizedBaseUrl);
+            ReportsApiClient>(
+                normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
             IIncidentsApiClient,
-            IncidentsApiClient>(normalizedBaseUrl);
+            IncidentsApiClient>(
+                normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
             IWorkOrdersApiClient,
-            WorkOrdersApiClient>(normalizedBaseUrl);
+            WorkOrdersApiClient>(
+                normalizedBaseUrl);
 
         return services;
     }
@@ -67,7 +79,8 @@ public static class ApiClientServiceCollectionExtensions
             .AddHttpClient<TClient, TImplementation>(
                 client =>
                 {
-                    client.BaseAddress = new Uri(baseUrl);
+                    client.BaseAddress =
+                        new Uri(baseUrl);
 
                     client.Timeout =
                         TimeSpan.FromSeconds(30);
