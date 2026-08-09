@@ -11,7 +11,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(
         this IServiceCollection services)
     {
-        services.AddScoped<IRolService, RolService>();
+        services.AddScoped<
+            IRolService,
+            RolService>();
 
         services.AddScoped<
             IUsuarioService,
@@ -20,6 +22,10 @@ public static class DependencyInjection
         services.AddScoped<
             IIncidentService,
             IncidentService>();
+
+        services.AddScoped<
+            IIncidentNotificationService,
+            IncidentNotificationService>();
 
         services.AddScoped<
             IAuditService,

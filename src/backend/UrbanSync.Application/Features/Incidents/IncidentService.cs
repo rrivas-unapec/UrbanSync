@@ -13,42 +13,60 @@ public sealed class IncidentService : IIncidentService
     private const string AuditActionStatus =
         "Cambio de estado";
 
-    private const string AuditActionTriage = "Triage";
+    private const string AuditActionTriage =
+        "Triage";
 
-    private const string AuditEmptyValue = "—";
+    private const string AuditEmptyValue =
+        "—";
 
-    private const int AuditDetailMaxLength = 400;
+    private const int AuditDetailMaxLength =
+        400;
 
-    private static readonly HashSet<string> AllowedPriorities =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Baja",
-            "Media",
-            "Alta",
-            "Critica",
-            "Crítica"
-        };
+    private static readonly HashSet<string>
+        AllowedPriorities =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "Baja",
+                "Media",
+                "Alta",
+                "Critica",
+                "Crítica"
+            };
 
-    private static readonly HashSet<string> AllowedStatuses =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Registrada",
-            "EnAnalisis",
-            "Asignada",
-            "EnProceso",
-            "Cerrada",
-            "Rechazada"
-        };
+    private static readonly HashSet<string>
+        AllowedStatuses =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "Registrada",
+                "EnAnalisis",
+                "Asignada",
+                "EnProceso",
+                "Cerrada",
+                "Rechazada"
+            };
 
-    private readonly IIncidentRepository _incidentRepository;
-    private readonly IAuditService _auditService;
+    private readonly IIncidentRepository
+        _incidentRepository;
+
+    private readonly IAuditService
+        _auditService;
+
+    private readonly IIncidentNotificationService
+        _incidentNotificationService;
 
     public IncidentService(
         IIncidentRepository incidentRepository,
-        IAuditService auditService)
+        IAuditService auditService,
+        IIncidentNotificationService incidentNotificationService)
     {
-        _incidentRepository = incidentRepository;
-        _auditService = auditService;
+        _incidentRepository =
+            incidentRepository;
+
+        _auditService =
+            auditService;
+
+        _incidentNotificationService =
+            incidentNotificationService;
     }
 
     public Task<IReadOnlyList<IncidentDto>> GetAllAsync(
@@ -56,10 +74,13 @@ public sealed class IncidentService : IIncidentService
         int? reportingUserId = null,
         CancellationToken cancellationToken = default)
     {
-        var normalizedStatus = NormalizeOptionalValue(status);
+        var normalizedStatus =
+            NormalizeOptionalValue(status);
 
-        if (normalizedStatus is not null &&
-            !AllowedStatuses.Contains(normalizedStatus))
+        if (
+            normalizedStatus is not null &&
+            !AllowedStatuses.Contains(
+                normalizedStatus))
         {
             throw new ArgumentException(
                 $"El estado '{status}' no es válido.",
@@ -93,7 +114,8 @@ public sealed class IncidentService : IIncidentService
         int reportingUserId,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(incident);
+        ArgumentNullException.ThrowIfNull(
+            incident);
 
         if (reportingUserId <= 0)
         {
@@ -102,21 +124,32 @@ public sealed class IncidentService : IIncidentService
                 "El ID del usuario debe ser mayor que cero.");
         }
 
-        ValidateCreateIncident(incident);
+        ValidateCreateIncident(
+            incident);
 
-        incident.Direccion = incident.Direccion.Trim();
+        incident.Direccion =
+            incident.Direccion.Trim();
+
         incident.Referencia =
-            NormalizeOptionalValue(incident.Referencia);
-        incident.Descripcion = incident.Descripcion.Trim();
-        incident.Prioridad = NormalizePriority(incident.Prioridad);
+            NormalizeOptionalValue(
+                incident.Referencia);
 
-        var caseCode = GenerateCaseCode();
+        incident.Descripcion =
+            incident.Descripcion.Trim();
 
-        var incidentId = await _incidentRepository.CreateAsync(
-            incident,
-            reportingUserId,
-            caseCode,
-            cancellationToken);
+        incident.Prioridad =
+            NormalizePriority(
+                incident.Prioridad);
+
+        var caseCode =
+            GenerateCaseCode();
+
+        var incidentId =
+            await _incidentRepository.CreateAsync(
+                incident,
+                reportingUserId,
+                caseCode,
+                cancellationToken);
 
         var createdIncident =
             await _incidentRepository.GetByIdAsync(
@@ -135,8 +168,14 @@ public sealed class IncidentService : IIncidentService
             createdIncident.Id,
             BuildDetail(
                 $"Incidencia {createdIncident.CodigoCaso} registrada.",
-                Change("Estado", null, createdIncident.Estado),
-                Change("Prioridad", null, createdIncident.Prioridad)),
+                Change(
+                    "Estado",
+                    null,
+                    createdIncident.Estado),
+                Change(
+                    "Prioridad",
+                    null,
+                    createdIncident.Prioridad)),
             cancellationToken);
 
         return createdIncident;
@@ -148,7 +187,8 @@ public sealed class IncidentService : IIncidentService
         int actingUserId,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(incident);
+        ArgumentNullException.ThrowIfNull(
+            incident);
 
         if (id <= 0)
         {
@@ -162,16 +202,19 @@ public sealed class IncidentService : IIncidentService
                 incident.Estado,
                 nameof(incident.Estado));
 
-        if (!AllowedStatuses.Contains(normalizedStatus))
+        if (
+            !AllowedStatuses.Contains(
+                normalizedStatus))
         {
             throw new ArgumentException(
                 $"El estado '{incident.Estado}' no es válido.",
                 nameof(incident));
         }
 
-        var previous = await _incidentRepository.GetByIdAsync(
-            id,
-            cancellationToken);
+        var previous =
+            await _incidentRepository.GetByIdAsync(
+                id,
+                cancellationToken);
 
         if (previous is null)
         {
@@ -190,9 +233,10 @@ public sealed class IncidentService : IIncidentService
             return null;
         }
 
-        var current = await _incidentRepository.GetByIdAsync(
-            id,
-            cancellationToken);
+        var current =
+            await _incidentRepository.GetByIdAsync(
+                id,
+                cancellationToken);
 
         if (current is not null)
         {
@@ -211,6 +255,19 @@ public sealed class IncidentService : IIncidentService
                         previous.InstitucionAsignada,
                         current.InstitucionAsignada)),
                 cancellationToken);
+
+            if (
+                !string.Equals(
+                    previous.Estado,
+                    current.Estado,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await _incidentNotificationService
+                    .NotifyStatusChangedAsync(
+                        previous,
+                        current,
+                        cancellationToken);
+            }
         }
 
         return current;
@@ -222,7 +279,8 @@ public sealed class IncidentService : IIncidentService
         int actingUserId,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(incident);
+        ArgumentNullException.ThrowIfNull(
+            incident);
 
         if (id <= 0)
         {
@@ -231,14 +289,18 @@ public sealed class IncidentService : IIncidentService
                 "El ID de la incidencia debe ser mayor que cero.");
         }
 
-        if (incident.TipoIncidenciaId is <= 0)
+        if (
+            incident.TipoIncidenciaId
+            is <= 0)
         {
             throw new ArgumentException(
                 "El tipo de incidencia debe ser mayor que cero.",
                 nameof(incident));
         }
 
-        if (incident.JurisdiccionId is <= 0)
+        if (
+            incident.JurisdiccionId
+            is <= 0)
         {
             throw new ArgumentException(
                 "La jurisdicción debe ser mayor que cero.",
@@ -246,44 +308,53 @@ public sealed class IncidentService : IIncidentService
         }
 
         incident.Prioridad =
-            NormalizeOptionalValue(incident.Prioridad);
+            NormalizeOptionalValue(
+                incident.Prioridad);
 
-        if (incident.Prioridad is not null)
+        if (
+            incident.Prioridad
+            is not null)
         {
             incident.Prioridad =
-                NormalizePriority(incident.Prioridad);
+                NormalizePriority(
+                    incident.Prioridad);
         }
 
         incident.Accion =
-            NormalizeOptionalValue(incident.Accion)?
+            NormalizeOptionalValue(
+                incident.Accion)?
                 .ToLowerInvariant();
 
-        var resultingStatus = ResolveTriageStatus(
-            incident.Accion);
+        var resultingStatus =
+            ResolveTriageStatus(
+                incident.Accion);
 
-        var previous = await _incidentRepository.GetByIdAsync(
-            id,
-            cancellationToken);
+        var previous =
+            await _incidentRepository.GetByIdAsync(
+                id,
+                cancellationToken);
 
         if (previous is null)
         {
             return null;
         }
 
-        var updated = await _incidentRepository.TriageAsync(
-            id,
-            incident,
-            resultingStatus,
-            cancellationToken);
+        var updated =
+            await _incidentRepository.TriageAsync(
+                id,
+                incident,
+                resultingStatus,
+                cancellationToken);
 
         if (!updated)
         {
             return null;
         }
 
-        var current = await _incidentRepository.GetByIdAsync(
-            id,
-            cancellationToken);
+        var current =
+            await _incidentRepository.GetByIdAsync(
+                id,
+                cancellationToken);
 
         if (current is not null)
         {
@@ -310,6 +381,19 @@ public sealed class IncidentService : IIncidentService
                         previous.Jurisdiccion,
                         current.Jurisdiccion)),
                 cancellationToken);
+
+            if (
+                !string.Equals(
+                    previous.Estado,
+                    current.Estado,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await _incidentNotificationService
+                    .NotifyStatusChangedAsync(
+                        previous,
+                        current,
+                        cancellationToken);
+            }
         }
 
         return current;
@@ -325,29 +409,41 @@ public sealed class IncidentService : IIncidentService
         return _auditService.CreateAsync(
             new CreateAuditDto
             {
-                UserId = actingUserId > 0
-                    ? actingUserId
-                    : null,
-                Action = action,
-                Entity = AuditEntity,
-                EntityId = incidentId,
-                Detail = detail
+                UserId =
+                    actingUserId > 0
+                        ? actingUserId
+                        : null,
+
+                Action =
+                    action,
+
+                Entity =
+                    AuditEntity,
+
+                EntityId =
+                    incidentId,
+
+                Detail =
+                    detail
             },
             cancellationToken);
     }
 
-    /// Convención compartida con los clientes: cada cambio se serializa como
-    /// `Campo: antes → después`, separados por `;`, usando `—` cuando el valor
-    /// no existe. Permite reconstruir un diff sin columnas adicionales.
     private static string? Change(
         string field,
         string? before,
         string? after)
     {
-        var normalizedBefore = NormalizeOptionalValue(before);
-        var normalizedAfter = NormalizeOptionalValue(after);
+        var normalizedBefore =
+            NormalizeOptionalValue(
+                before);
 
-        if (string.Equals(
+        var normalizedAfter =
+            NormalizeOptionalValue(
+                after);
+
+        if (
+            string.Equals(
                 normalizedBefore,
                 normalizedAfter,
                 StringComparison.Ordinal))
@@ -355,7 +451,8 @@ public sealed class IncidentService : IIncidentService
             return null;
         }
 
-        return $"{field}: " +
+        return
+            $"{field}: " +
             $"{normalizedBefore ?? AuditEmptyValue} → " +
             $"{normalizedAfter ?? AuditEmptyValue}";
     }
@@ -364,86 +461,116 @@ public sealed class IncidentService : IIncidentService
         string summary,
         params string?[] changes)
     {
-        var applied = changes
-            .Where(change => change is not null)
-            .ToArray();
+        var applied =
+            changes
+                .Where(
+                    change =>
+                        change is not null)
+                .ToArray();
 
-        var detail = applied.Length == 0
-            ? summary
-            : $"{summary} {string.Join("; ", applied)}";
+        var detail =
+            applied.Length == 0
+                ? summary
+                : $"{summary} {string.Join("; ", applied)}";
 
-        return detail.Length <= AuditDetailMaxLength
-            ? detail
-            : detail[..AuditDetailMaxLength];
+        return
+            detail.Length <= AuditDetailMaxLength
+                ? detail
+                : detail[..AuditDetailMaxLength];
     }
 
     private static void ValidateCreateIncident(
         CreateIncidentDto incident)
     {
-        if (incident.TipoIncidenciaId <= 0)
+        if (
+            incident.TipoIncidenciaId
+            <= 0)
         {
             throw new ArgumentException(
                 "El tipo de incidencia es obligatorio.",
                 nameof(incident));
         }
 
-        if (incident.JurisdiccionId <= 0)
+        if (
+            incident.JurisdiccionId
+            <= 0)
         {
             throw new ArgumentException(
                 "La jurisdicción es obligatoria.",
                 nameof(incident));
         }
 
-        if (string.IsNullOrWhiteSpace(incident.Direccion))
+        if (
+            string.IsNullOrWhiteSpace(
+                incident.Direccion))
         {
             throw new ArgumentException(
                 "La dirección es obligatoria.",
                 nameof(incident));
         }
 
-        if (string.IsNullOrWhiteSpace(incident.Descripcion))
+        if (
+            string.IsNullOrWhiteSpace(
+                incident.Descripcion))
         {
             throw new ArgumentException(
                 "La descripción es obligatoria.",
                 nameof(incident));
         }
 
-        if (incident.Direccion.Trim().Length > 250)
+        if (
+            incident.Direccion
+                .Trim()
+                .Length
+            > 250)
         {
             throw new ArgumentException(
                 "La dirección no puede superar 250 caracteres.",
                 nameof(incident));
         }
 
-        if (incident.Referencia?.Trim().Length > 250)
+        if (
+            incident.Referencia?
+                .Trim()
+                .Length
+            > 250)
         {
             throw new ArgumentException(
                 "La referencia no puede superar 250 caracteres.",
                 nameof(incident));
         }
 
-        if (incident.Descripcion.Trim().Length > 1000)
+        if (
+            incident.Descripcion
+                .Trim()
+                .Length
+            > 1000)
         {
             throw new ArgumentException(
                 "La descripción no puede superar 1000 caracteres.",
                 nameof(incident));
         }
 
-        if (incident.Latitud is < -90 or > 90)
+        if (
+            incident.Latitud
+            is < -90 or > 90)
         {
             throw new ArgumentException(
                 "La latitud debe estar entre -90 y 90.",
                 nameof(incident));
         }
 
-        if (incident.Longitud is < -180 or > 180)
+        if (
+            incident.Longitud
+            is < -180 or > 180)
         {
             throw new ArgumentException(
                 "La longitud debe estar entre -180 y 180.",
                 nameof(incident));
         }
 
-        if (!AllowedPriorities.Contains(
+        if (
+            !AllowedPriorities.Contains(
                 incident.Prioridad.Trim()))
         {
             throw new ArgumentException(
@@ -452,14 +579,17 @@ public sealed class IncidentService : IIncidentService
         }
     }
 
-    private static string NormalizePriority(string priority)
+    private static string NormalizePriority(
+        string priority)
     {
         var normalized =
             NormalizeRequiredValue(
                 priority,
                 nameof(priority));
 
-        if (!AllowedPriorities.Contains(normalized))
+        if (
+            !AllowedPriorities.Contains(
+                normalized))
         {
             throw new ArgumentException(
                 $"La prioridad '{priority}' no es válida.",
@@ -478,31 +608,44 @@ public sealed class IncidentService : IIncidentService
     {
         return action switch
         {
-            null => null,
-            "asignar" => "Asignada",
-            "aprobar" => "Asignada",
-            "rechazar" => "Rechazada",
-            _ => throw new ArgumentException(
-                $"La acción de moderación '{action}' no es válida.",
-                nameof(action))
+            null =>
+                null,
+
+            "asignar" =>
+                "Asignada",
+
+            "aprobar" =>
+                "Asignada",
+
+            "rechazar" =>
+                "Rechazada",
+
+            _ =>
+                throw new ArgumentException(
+                    $"La acción de moderación '{action}' no es válida.",
+                    nameof(action))
         };
     }
 
     private static string GenerateCaseCode()
     {
-        var randomPart = Guid.NewGuid()
-            .ToString("N")
-            [..10]
-            .ToUpperInvariant();
+        var randomPart =
+            Guid.NewGuid()
+                .ToString("N")
+                [..10]
+                .ToUpperInvariant();
 
-        return $"INC-{DateTime.UtcNow:yyyyMMdd}-{randomPart}";
+        return
+            $"INC-{DateTime.UtcNow:yyyyMMdd}-{randomPart}";
     }
 
     private static string NormalizeRequiredValue(
         string value,
         string parameterName)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        if (
+            string.IsNullOrWhiteSpace(
+                value))
         {
             throw new ArgumentException(
                 "El valor es obligatorio.",
@@ -515,8 +658,10 @@ public sealed class IncidentService : IIncidentService
     private static string? NormalizeOptionalValue(
         string? value)
     {
-        return string.IsNullOrWhiteSpace(value)
-            ? null
-            : value.Trim();
+        return
+            string.IsNullOrWhiteSpace(
+                value)
+                ? null
+                : value.Trim();
     }
 }

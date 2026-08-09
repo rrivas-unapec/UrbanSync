@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UrbanSync.Application.Common.Interfaces.Authentication;
+using UrbanSync.Application.Common.Interfaces.Notifications;
 using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Infrastructure.Authentication;
+using UrbanSync.Infrastructure.Notifications.Email;
 using UrbanSync.Infrastructure.Persistence.Connections;
 using UrbanSync.Infrastructure.Persistence.Repositories;
 
@@ -15,12 +17,15 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString =
-            configuration.GetConnectionString("UrbanSyncDb")
+            configuration.GetConnectionString(
+                "UrbanSyncDb")
             ?? throw new InvalidOperationException(
                 "Connection string 'UrbanSyncDb' no configurada.");
 
-        services.AddSingleton<IDbConnectionFactory>(
-            new SqlConnectionFactory(connectionString));
+        services.AddSingleton<
+            IDbConnectionFactory>(
+            new SqlConnectionFactory(
+                connectionString));
 
         services.AddScoped<
             IRolRepository,
@@ -41,6 +46,16 @@ public static class DependencyInjection
         services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
+
+        services.AddScoped<
+            IEmailSender,
+            MailKitEmailSender>();
+
+        services
+            .AddOptions<SmtpEmailOptions>()
+            .Bind(
+                configuration.GetSection(
+                    SmtpEmailOptions.SectionName));
 
         services
             .AddOptions<JwtOptions>()

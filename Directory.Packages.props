@@ -59,5 +59,13 @@
     <PackageVersion
       Include="coverlet.collector"
       Version="6.0.2" />
+
+    <PackageVersion
+      Include="MailKit"
+      Version="4.17.0" />
+
+    <PackageVersion
+      Include="Microsoft.Extensions.Logging.Abstractions"
+      Version="8.0.2" />
   </ItemGroup>
 </Project>

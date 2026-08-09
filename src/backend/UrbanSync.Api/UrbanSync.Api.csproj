@@ -2,25 +2,21 @@
 
   <PropertyGroup>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <UserSecretsId>31a85e2d-5be2-4bc4-9f39-4d2e95e2162c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference
-      Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 
-    <PackageReference
-      Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
 
-    <PackageReference
-      Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
+    <ProjectReference Include="..\UrbanSync.Application\UrbanSync.Application.csproj" />
 
-    <ProjectReference
-      Include="..\UrbanSync.Infrastructure\UrbanSync.Infrastructure.csproj" />
+    <ProjectReference Include="..\UrbanSync.Infrastructure\UrbanSync.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

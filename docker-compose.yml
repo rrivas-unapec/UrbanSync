@@ -20,6 +20,15 @@ services:
       Jwt__SecretKey: ${JWT_SECRET_KEY}
       Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
 
+      Email__Enabled: ${EMAIL_ENABLED}
+      Email__Host: ${EMAIL_HOST}
+      Email__Port: ${EMAIL_PORT}
+      Email__UseStartTls: ${EMAIL_USE_START_TLS}
+      Email__UserName: ${EMAIL_USERNAME}
+      Email__Password: ${EMAIL_PASSWORD}
+      Email__FromEmail: ${EMAIL_FROM_EMAIL}
+      Email__FromName: ${EMAIL_FROM_NAME}
+
       Cors__AllowedOrigins__0: http://localhost:8081
 
     ports:

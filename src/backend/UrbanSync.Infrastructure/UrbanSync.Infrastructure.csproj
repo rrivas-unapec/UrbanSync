@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="MailKit" />
+
     <PackageReference Include="Microsoft.Data.SqlClient" />
 
     <PackageReference
@@ -8,6 +10,9 @@
 
     <PackageReference
       Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+
+    <PackageReference
+      Include="Microsoft.Extensions.Logging.Abstractions" />
 
     <PackageReference
       Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
