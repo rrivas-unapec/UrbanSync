@@ -3,6 +3,7 @@ using UrbanSync.Application.Features.Audit;
 using UrbanSync.Application.Features.Incidents;
 using UrbanSync.Application.Features.Roles;
 using UrbanSync.Application.Features.Users;
+using UrbanSync.Application.Features.Asset;
 
 namespace UrbanSync.Application;
 
@@ -24,6 +25,10 @@ public static class DependencyInjection
         services.AddScoped<
             IAuditService,
             AuditService>();
+
+        services.AddScoped<
+            IAssetService,
+            AssetService>();
 
         return services;
     }
