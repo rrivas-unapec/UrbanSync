@@ -1,9 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using UrbanSync.Application.Features.Asset;
 using UrbanSync.Application.Features.Audit;
 using UrbanSync.Application.Features.Incidents;
+using UrbanSync.Application.Features.IncidentType;
 using UrbanSync.Application.Features.Roles;
 using UrbanSync.Application.Features.Users;
-using UrbanSync.Application.Features.Asset;
 
 namespace UrbanSync.Application;
 
@@ -12,7 +13,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(
         this IServiceCollection services)
     {
-        services.AddScoped<IRolService, RolService>();
+        services.AddScoped<
+            IRolService,
+            RolService>();
 
         services.AddScoped<
             IUsuarioService,
@@ -25,6 +28,10 @@ public static class DependencyInjection
         services.AddScoped<
             IAuditService,
             AuditService>();
+
+        services.AddScoped<
+            IIncidentTypeService,
+            IncidentTypeService>();
 
         services.AddScoped<
             IAssetService,
