@@ -11,7 +11,7 @@ namespace UrbanSync.Api.Controllers;
 public sealed class IncidentTypesController : ControllerBase
 {
     private const string WriteRoles = "Administrador,SupervisorOperaciones";
-    private const string ReadRoles = "Administrador,SupervisorOperaciones,AnalistaTecnico,Ciudadano";
+    private const string ReadRoles = "Administrador,SupervisorOperaciones,AnalistaTecnico,GestorUbicacion,Ciudadano";
 
     private readonly IIncidentTypeService _service;
 
