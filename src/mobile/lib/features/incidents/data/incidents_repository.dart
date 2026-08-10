@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../domain/catalog.dart';
 import '../domain/incident.dart';
+import '../domain/urban_asset.dart';
 
 final incidentsRepositoryProvider = Provider<IncidentsRepository>(
   (ref) => IncidentsRepository(ref.read(dioProvider)),
@@ -51,12 +52,14 @@ class IncidentsRepository {
     required String direccion,
     String? referencia,
     int? jurisdiccionId,
+    int? activoId,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/incidents',
         data: {
           'tipoIncidenciaId': tipoIncidenciaId,
+          'activoId': ?activoId,
           'descripcion': descripcion,
           'prioridad': prioridad,
           'ubicacion': {
@@ -156,6 +159,32 @@ class IncidentsRepository {
       final response = await _dio.get<List<dynamic>>('/api/incident-types');
       return response.data!
           .map((e) => IncidentType.fromJson(e as Map<String, dynamic>))
+          .where((type) => type.activo)
+          .toList();
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<List<UrbanAsset>> assets() async {
+    try {
+      final response = await _dio.get<List<dynamic>>('/api/assets');
+      return response.data!
+          .map((e) => UrbanAsset.fromJson(e as Map<String, dynamic>))
+          .where((asset) => asset.activo)
+          .toList();
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<List<AssetHistoryEntry>> assetHistory(int assetId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/api/assets/$assetId/history',
+      );
+      return response.data!
+          .map((e) => AssetHistoryEntry.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);

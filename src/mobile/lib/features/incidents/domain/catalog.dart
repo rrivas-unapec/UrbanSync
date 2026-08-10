@@ -5,6 +5,7 @@ class IncidentType {
     required this.institucionId,
     required this.institucionNombre,
     this.descripcion,
+    this.activo = true,
   });
 
   final int id;
@@ -12,13 +13,17 @@ class IncidentType {
   final int institucionId;
   final String institucionNombre;
   final String? descripcion;
+  final bool activo;
 
+  /// El API expone este catálogo con nombres en inglés
+  /// (`name`, `institutionId`, `isActive`).
   factory IncidentType.fromJson(Map<String, dynamic> json) => IncidentType(
-    id: json['id'] as int,
-    nombre: json['nombre'] as String? ?? '',
-    institucionId: json['institucionId'] as int? ?? 0,
-    institucionNombre: json['institucionNombre'] as String? ?? '',
-    descripcion: json['descripcion'] as String?,
+    id: (json['id'] as num).toInt(),
+    nombre: json['name'] as String? ?? '',
+    institucionId: (json['institutionId'] as num?)?.toInt() ?? 0,
+    institucionNombre: json['institutionName'] as String? ?? '',
+    descripcion: json['description'] as String?,
+    activo: json['isActive'] as bool? ?? true,
   );
 }
 
