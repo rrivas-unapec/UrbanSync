@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <InvariantGlobalization>false</InvariantGlobalization>
+    <UserSecretsId>31a85e2d-5be2-4bc4-9f39-4d2e95e2162c</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

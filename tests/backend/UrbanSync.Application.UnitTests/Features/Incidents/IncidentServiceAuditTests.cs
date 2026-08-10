@@ -15,6 +15,9 @@ public sealed class IncidentServiceAuditTests
     private readonly Mock<IAuditService>
         _auditServiceMock;
 
+    private readonly Mock<IIncidentNotificationService>
+        _incidentNotificationServiceMock;
+
     private readonly IncidentService _service;
 
     public IncidentServiceAuditTests()
@@ -25,66 +28,106 @@ public sealed class IncidentServiceAuditTests
         _auditServiceMock =
             new Mock<IAuditService>();
 
+        _incidentNotificationServiceMock =
+            new Mock<IIncidentNotificationService>();
+
         _auditServiceMock
             .Setup(service => service.CreateAsync(
                 It.IsAny<CreateAuditDto>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AuditDto());
 
-        _service = new IncidentService(
-            _incidentRepositoryMock.Object,
-            _auditServiceMock.Object);
+        _incidentNotificationServiceMock
+            .Setup(service =>
+                service.NotifyStatusChangedAsync(
+                    It.IsAny<IncidentDto>(),
+                    It.IsAny<IncidentDto>(),
+                    It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _service =
+            new IncidentService(
+                _incidentRepositoryMock.Object,
+                _auditServiceMock.Object,
+                _incidentNotificationServiceMock.Object);
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_ShouldRecordAudit_WithStatusTransition()
+    public async Task
+        UpdateStatusAsync_ShouldRecordAudit_WithStatusTransition()
     {
         SetupIncident(
-            before: Incident(estado: "Asignada"),
-            after: Incident(estado: "EnProceso"));
+            before: Incident(
+                estado: "Asignada"),
+            after: Incident(
+                estado: "EnProceso"));
 
         _incidentRepositoryMock
-            .Setup(repository => repository.UpdateStatusAsync(
-                1,
-                "EnProceso",
-                null,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository =>
+                repository.UpdateStatusAsync(
+                    1,
+                    "EnProceso",
+                    null,
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         await _service.UpdateStatusAsync(
             1,
-            new UpdateIncidentStatusDto { Estado = "EnProceso" },
+            new UpdateIncidentStatusDto
+            {
+                Estado = "EnProceso"
+            },
             ActingUserId);
 
-        var audit = CapturedAudit();
+        var audit =
+            CapturedAudit();
 
-        Assert.Equal(ActingUserId, audit.UserId);
-        Assert.Equal("Cambio de estado", audit.Action);
-        Assert.Equal("Incidencias", audit.Entity);
-        Assert.Equal(1, audit.EntityId);
+        Assert.Equal(
+            ActingUserId,
+            audit.UserId);
+
+        Assert.Equal(
+            "Cambio de estado",
+            audit.Action);
+
+        Assert.Equal(
+            "Incidencias",
+            audit.Entity);
+
+        Assert.Equal(
+            1,
+            audit.EntityId);
+
         Assert.Contains(
             "Estado: Asignada → EnProceso",
             audit.Detail);
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_ShouldOmitFields_ThatDidNotChange()
+    public async Task
+        UpdateStatusAsync_ShouldOmitFields_ThatDidNotChange()
     {
         SetupIncident(
-            before: Incident(estado: "Asignada"),
-            after: Incident(estado: "EnProceso"));
+            before: Incident(
+                estado: "Asignada"),
+            after: Incident(
+                estado: "EnProceso"));
 
         _incidentRepositoryMock
-            .Setup(repository => repository.UpdateStatusAsync(
-                1,
-                "EnProceso",
-                null,
-                It.IsAny<CancellationToken>()))
+            .Setup(repository =>
+                repository.UpdateStatusAsync(
+                    1,
+                    "EnProceso",
+                    null,
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         await _service.UpdateStatusAsync(
             1,
-            new UpdateIncidentStatusDto { Estado = "EnProceso" },
+            new UpdateIncidentStatusDto
+            {
+                Estado = "EnProceso"
+            },
             ActingUserId);
 
         Assert.DoesNotContain(
@@ -93,7 +136,8 @@ public sealed class IncidentServiceAuditTests
     }
 
     [Fact]
-    public async Task TriageAsync_ShouldRecordAudit_WithEveryChangedField()
+    public async Task
+        TriageAsync_ShouldRecordAudit_WithEveryChangedField()
     {
         SetupIncident(
             before: Incident(
@@ -104,11 +148,12 @@ public sealed class IncidentServiceAuditTests
                 prioridad: "Alta"));
 
         _incidentRepositoryMock
-            .Setup(repository => repository.TriageAsync(
-                1,
-                It.IsAny<TriageIncidentDto>(),
-                "Asignada",
-                It.IsAny<CancellationToken>()))
+            .Setup(repository =>
+                repository.TriageAsync(
+                    1,
+                    It.IsAny<TriageIncidentDto>(),
+                    "Asignada",
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         await _service.TriageAsync(
@@ -120,32 +165,54 @@ public sealed class IncidentServiceAuditTests
             },
             ActingUserId);
 
-        var detail = CapturedAudit().Detail;
+        var detail =
+            CapturedAudit().Detail;
 
-        Assert.Contains("Estado: Registrada → Asignada", detail);
-        Assert.Contains("Prioridad: Media → Alta", detail);
+        Assert.Contains(
+            "Estado: Registrada → Asignada",
+            detail);
+
+        Assert.Contains(
+            "Prioridad: Media → Alta",
+            detail);
     }
 
     [Fact]
-    public async Task UpdateStatusAsync_ShouldNotRecordAudit_WhenIncidentIsMissing()
+    public async Task
+        UpdateStatusAsync_ShouldNotRecordAudit_WhenIncidentIsMissing()
     {
         _incidentRepositoryMock
-            .Setup(repository => repository.GetByIdAsync(
-                1,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IncidentDto?)null);
+            .Setup(repository =>
+                repository.GetByIdAsync(
+                    1,
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+                (IncidentDto?)null);
 
-        var result = await _service.UpdateStatusAsync(
-            1,
-            new UpdateIncidentStatusDto { Estado = "EnProceso" },
-            ActingUserId);
+        var result =
+            await _service.UpdateStatusAsync(
+                1,
+                new UpdateIncidentStatusDto
+                {
+                    Estado = "EnProceso"
+                },
+                ActingUserId);
 
         Assert.Null(result);
 
         _auditServiceMock.Verify(
-            service => service.CreateAsync(
-                It.IsAny<CreateAuditDto>(),
-                It.IsAny<CancellationToken>()),
+            service =>
+                service.CreateAsync(
+                    It.IsAny<CreateAuditDto>(),
+                    It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        _incidentNotificationServiceMock.Verify(
+            service =>
+                service.NotifyStatusChangedAsync(
+                    It.IsAny<IncidentDto>(),
+                    It.IsAny<IncidentDto>(),
+                    It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -154,22 +221,28 @@ public sealed class IncidentServiceAuditTests
         IncidentDto after)
     {
         _incidentRepositoryMock
-            .SetupSequence(repository => repository.GetByIdAsync(
-                1,
-                It.IsAny<CancellationToken>()))
+            .SetupSequence(repository =>
+                repository.GetByIdAsync(
+                    1,
+                    It.IsAny<CancellationToken>()))
             .ReturnsAsync(before)
             .ReturnsAsync(after);
     }
 
     private CreateAuditDto CapturedAudit()
     {
-        CreateAuditDto? captured = null;
+        CreateAuditDto? captured =
+            null;
 
         _auditServiceMock.Verify(
-            service => service.CreateAsync(
-                It.Is<CreateAuditDto>(audit =>
-                    Capture(audit, out captured)),
-                It.IsAny<CancellationToken>()),
+            service =>
+                service.CreateAsync(
+                    It.Is<CreateAuditDto>(
+                        audit =>
+                            Capture(
+                                audit,
+                                out captured)),
+                    It.IsAny<CancellationToken>()),
             Times.Once);
 
         Assert.NotNull(captured);
@@ -181,7 +254,9 @@ public sealed class IncidentServiceAuditTests
         CreateAuditDto audit,
         out CreateAuditDto? captured)
     {
-        captured = audit;
+        captured =
+            audit;
+
         return true;
     }
 
@@ -193,12 +268,24 @@ public sealed class IncidentServiceAuditTests
         return new IncidentDto
         {
             Id = 1,
-            CodigoCaso = "INC-20260806-ABCDEF0123",
-            Estado = estado,
-            Prioridad = prioridad,
-            InstitucionAsignada = institucion,
-            TipoIncidencia = "Infraestructura Fisica",
-            Jurisdiccion = "Distrito Nacional"
+
+            CodigoCaso =
+                "INC-20260806-ABCDEF0123",
+
+            Estado =
+                estado,
+
+            Prioridad =
+                prioridad,
+
+            InstitucionAsignada =
+                institucion,
+
+            TipoIncidencia =
+                "Infraestructura Fisica",
+
+            Jurisdiccion =
+                "Distrito Nacional"
         };
     }
 }

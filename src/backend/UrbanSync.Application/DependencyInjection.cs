@@ -26,6 +26,10 @@ public static class DependencyInjection
             IncidentService>();
 
         services.AddScoped<
+            IIncidentNotificationService,
+            IncidentNotificationService>();
+
+        services.AddScoped<
             IAuditService,
             AuditService>();
 
