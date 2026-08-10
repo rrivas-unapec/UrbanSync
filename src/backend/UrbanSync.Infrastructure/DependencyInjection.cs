@@ -39,6 +39,10 @@ public static class DependencyInjection
             AuditRepository>();
 
         services.AddScoped<
+            IIncidentTypeRepository,
+            IncidentTypeRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 
