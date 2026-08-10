@@ -87,6 +87,9 @@ public sealed class IncidentsController : ControllerBase
                     TipoIncidenciaId =
                         request.TipoIncidenciaId,
 
+                    ActivoId =
+                        request.ActivoId,
+
                     Descripcion =
                         request.Descripcion.Trim(),
 
@@ -226,6 +229,8 @@ public sealed class IncidentsController : ControllerBase
                 incident.TipoIncidenciaId,
             TipoIncidencia =
                 incident.TipoIncidencia,
+            ActivoId =
+                incident.ActivoId,
             JurisdiccionId =
                 incident.JurisdiccionId,
             Jurisdiccion =

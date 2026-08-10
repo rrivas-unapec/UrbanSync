@@ -17,6 +17,7 @@ public sealed class IncidentRepository : IIncidentRepository
             u.NombreCompleto AS UsuarioReporta,
             i.TipoIncidenciaId,
             ti.Nombre AS TipoIncidencia,
+            i.ActivoId,
             i.UbicacionId,
             ub.Direccion,
             ub.Referencia,
@@ -88,14 +89,18 @@ public sealed class IncidentRepository : IIncidentRepository
             "@ReportingUserId",
             reportingUserId);
 
-        await connection.OpenAsync(cancellationToken);
+        await connection.OpenAsync(
+            cancellationToken);
 
         using var reader =
-            await command.ExecuteReaderAsync(cancellationToken);
+            await command.ExecuteReaderAsync(
+                cancellationToken);
 
-        while (await reader.ReadAsync(cancellationToken))
+        while (await reader.ReadAsync(
+                   cancellationToken))
         {
-            incidents.Add(Map(reader));
+            incidents.Add(
+                Map(reader));
         }
 
         return incidents;
@@ -119,12 +124,15 @@ public sealed class IncidentRepository : IIncidentRepository
             "@Id",
             SqlDbType.Int).Value = id;
 
-        await connection.OpenAsync(cancellationToken);
+        await connection.OpenAsync(
+            cancellationToken);
 
         using var reader =
-            await command.ExecuteReaderAsync(cancellationToken);
+            await command.ExecuteReaderAsync(
+                cancellationToken);
 
-        return await reader.ReadAsync(cancellationToken)
+        return await reader.ReadAsync(
+            cancellationToken)
             ? Map(reader)
             : null;
     }
@@ -138,13 +146,35 @@ public sealed class IncidentRepository : IIncidentRepository
         using var connection =
             _connectionFactory.CreateConnection();
 
-        await connection.OpenAsync(cancellationToken);
+        await connection.OpenAsync(
+            cancellationToken);
 
         using var transaction =
             connection.BeginTransaction();
 
         try
         {
+            /*
+             * Si la incidencia está asociada a un activo urbano,
+             * comprobamos que:
+             *
+             * 1. El activo exista.
+             * 2. El activo esté activo.
+             * 3. Pertenezca a la misma jurisdicción indicada
+             *    en la incidencia.
+             *
+             * Si ActivoId es null, esta validación se omite.
+             */
+            if (incident.ActivoId.HasValue)
+            {
+                await ValidateAssetAssociationAsync(
+                    connection,
+                    transaction,
+                    incident.ActivoId.Value,
+                    incident.JurisdiccionId,
+                    cancellationToken);
+            }
+
             var assignedInstitutionId =
                 await GetInstitutionForIncidentTypeAsync(
                     connection,
@@ -234,7 +264,8 @@ public sealed class IncidentRepository : IIncidentRepository
             "@AssignedInstitutionId",
             assignedInstitutionId);
 
-        await connection.OpenAsync(cancellationToken);
+        await connection.OpenAsync(
+            cancellationToken);
 
         return await command.ExecuteNonQueryAsync(
             cancellationToken) > 0;
@@ -249,7 +280,8 @@ public sealed class IncidentRepository : IIncidentRepository
         using var connection =
             _connectionFactory.CreateConnection();
 
-        await connection.OpenAsync(cancellationToken);
+        await connection.OpenAsync(
+            cancellationToken);
 
         using var transaction =
             connection.BeginTransaction();
@@ -280,55 +312,59 @@ public sealed class IncidentRepository : IIncidentRepository
                     resultingIncidentTypeId,
                     cancellationToken);
 
-            using var updateIncidentCommand = new SqlCommand(
-                """
-                UPDATE dbo.Incidencias
-                SET
-                    TipoIncidenciaId =
-                        COALESCE(
-                            @IncidentTypeId,
-                            TipoIncidenciaId
-                        ),
-                    Prioridad =
-                        COALESCE(
-                            @Priority,
-                            Prioridad
-                        ),
-                    Estado =
-                        COALESCE(
-                            @Status,
-                            Estado
-                        ),
-                    InstitucionAsignadaId =
-                        COALESCE(
-                            @AssignedInstitutionId,
-                            InstitucionAsignadaId
-                        ),
-                    FechaAsignacion =
-                        CASE
-                            WHEN
-                                @Status = 'Asignada'
-                                AND FechaAsignacion IS NULL
-                            THEN SYSDATETIME()
-                            ELSE FechaAsignacion
-                        END,
-                    FechaCierre =
-                        CASE
-                            WHEN @Status IN ('Cerrada', 'Rechazada')
-                            THEN SYSDATETIME()
-                            WHEN
-                                @Status IS NOT NULL
-                                AND @Status NOT IN (
+            using var updateIncidentCommand =
+                new SqlCommand(
+                    """
+                    UPDATE dbo.Incidencias
+                    SET
+                        TipoIncidenciaId =
+                            COALESCE(
+                                @IncidentTypeId,
+                                TipoIncidenciaId
+                            ),
+                        Prioridad =
+                            COALESCE(
+                                @Priority,
+                                Prioridad
+                            ),
+                        Estado =
+                            COALESCE(
+                                @Status,
+                                Estado
+                            ),
+                        InstitucionAsignadaId =
+                            COALESCE(
+                                @AssignedInstitutionId,
+                                InstitucionAsignadaId
+                            ),
+                        FechaAsignacion =
+                            CASE
+                                WHEN
+                                    @Status = 'Asignada'
+                                    AND FechaAsignacion IS NULL
+                                THEN SYSDATETIME()
+                                ELSE FechaAsignacion
+                            END,
+                        FechaCierre =
+                            CASE
+                                WHEN @Status IN (
                                     'Cerrada',
                                     'Rechazada'
                                 )
-                            THEN NULL
-                            ELSE FechaCierre
-                        END
-                WHERE Id = @Id;
-                """,
-                connection,
-                transaction);
+                                THEN SYSDATETIME()
+                                WHEN
+                                    @Status IS NOT NULL
+                                    AND @Status NOT IN (
+                                        'Cerrada',
+                                        'Rechazada'
+                                    )
+                                THEN NULL
+                                ELSE FechaCierre
+                            END
+                    WHERE Id = @Id;
+                    """,
+                    connection,
+                    transaction);
 
             updateIncidentCommand.Parameters.Add(
                 "@Id",
@@ -382,8 +418,9 @@ public sealed class IncidentRepository : IIncidentRepository
                     SqlDbType.Int).Value =
                     currentData.Value.LocationId;
 
-                await updateLocationCommand.ExecuteNonQueryAsync(
-                    cancellationToken);
+                await updateLocationCommand
+                    .ExecuteNonQueryAsync(
+                        cancellationToken);
             }
 
             transaction.Commit();
@@ -397,37 +434,106 @@ public sealed class IncidentRepository : IIncidentRepository
         }
     }
 
-    private static async Task<int?> GetInstitutionForIncidentTypeAsync(
+    /*
+     * Valida que un activo urbano pueda asociarse
+     * correctamente a una nueva incidencia.
+     */
+    private static async Task ValidateAssetAssociationAsync(
         SqlConnection connection,
         SqlTransaction transaction,
-        int incidentTypeId,
+        int assetId,
+        int jurisdictionId,
         CancellationToken cancellationToken)
     {
-        using var command = new SqlCommand(
-            """
-            SELECT InstitucionId
-            FROM dbo.TiposIncidencia
-            WHERE
-                Id = @IncidentTypeId
-                AND Activo = 1;
-            """,
-            connection,
-            transaction);
+        using var command =
+            new SqlCommand(
+                """
+                SELECT
+                    JurisdiccionId,
+                    Activo
+                FROM dbo.Activos
+                WHERE Id = @AssetId;
+                """,
+                connection,
+                transaction);
+
+        command.Parameters.Add(
+            "@AssetId",
+            SqlDbType.Int).Value =
+            assetId;
+
+        using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        if (!await reader.ReadAsync(
+                cancellationToken))
+        {
+            throw new ArgumentException(
+                $"No existe ningún activo urbano con el ID {assetId}.");
+        }
+
+        var assetJurisdictionId =
+            reader.GetInt32(
+                reader.GetOrdinal(
+                    "JurisdiccionId"));
+
+        var isActive =
+            reader.GetBoolean(
+                reader.GetOrdinal(
+                    "Activo"));
+
+        if (!isActive)
+        {
+            throw new ArgumentException(
+                $"El activo urbano con ID {assetId} no está activo.");
+        }
+
+        if (assetJurisdictionId != jurisdictionId)
+        {
+            throw new ArgumentException(
+                "El activo seleccionado no pertenece " +
+                "a la jurisdicción indicada en la incidencia.");
+        }
+    }
+
+    private static async Task<int?>
+        GetInstitutionForIncidentTypeAsync(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            int incidentTypeId,
+            CancellationToken cancellationToken)
+    {
+        using var command =
+            new SqlCommand(
+                """
+                SELECT InstitucionId
+                FROM dbo.TiposIncidencia
+                WHERE
+                    Id = @IncidentTypeId
+                    AND Activo = 1;
+                """,
+                connection,
+                transaction);
 
         command.Parameters.Add(
             "@IncidentTypeId",
-            SqlDbType.Int).Value = incidentTypeId;
+            SqlDbType.Int).Value =
+            incidentTypeId;
 
         var result =
-            await command.ExecuteScalarAsync(cancellationToken);
+            await command.ExecuteScalarAsync(
+                cancellationToken);
 
-        if (result is null || result == DBNull.Value)
+        if (result is null ||
+            result == DBNull.Value)
         {
             throw new ArgumentException(
                 $"No existe un tipo de incidencia activo con el ID {incidentTypeId}.");
         }
 
-        return Convert.ToInt32(result);
+        return Convert.ToInt32(
+            result);
     }
 
     private static async Task<int> CreateLocationAsync(
@@ -436,33 +542,35 @@ public sealed class IncidentRepository : IIncidentRepository
         CreateIncidentDto incident,
         CancellationToken cancellationToken)
     {
-        using var command = new SqlCommand(
-            """
-            INSERT INTO dbo.Ubicaciones
-            (
-                Direccion,
-                Referencia,
-                Latitud,
-                Longitud,
-                JurisdiccionId
-            )
-            OUTPUT INSERTED.Id
-            VALUES
-            (
-                @Address,
-                @Reference,
-                @Latitude,
-                @Longitude,
-                @JurisdictionId
-            );
-            """,
-            connection,
-            transaction);
+        using var command =
+            new SqlCommand(
+                """
+                INSERT INTO dbo.Ubicaciones
+                (
+                    Direccion,
+                    Referencia,
+                    Latitud,
+                    Longitud,
+                    JurisdiccionId
+                )
+                OUTPUT INSERTED.Id
+                VALUES
+                (
+                    @Address,
+                    @Reference,
+                    @Latitude,
+                    @Longitude,
+                    @JurisdictionId
+                );
+                """,
+                connection,
+                transaction);
 
         command.Parameters.Add(
             "@Address",
             SqlDbType.NVarChar,
-            250).Value = incident.Direccion;
+            250).Value =
+            incident.Direccion;
 
         AddNullableNVarChar(
             command,
@@ -490,9 +598,11 @@ public sealed class IncidentRepository : IIncidentRepository
             incident.JurisdiccionId;
 
         var result =
-            await command.ExecuteScalarAsync(cancellationToken);
+            await command.ExecuteScalarAsync(
+                cancellationToken);
 
-        return Convert.ToInt32(result);
+        return Convert.ToInt32(
+            result);
     }
 
     private static async Task<int> CreateIncidentAsync(
@@ -505,52 +615,63 @@ public sealed class IncidentRepository : IIncidentRepository
         int? assignedInstitutionId,
         CancellationToken cancellationToken)
     {
-        using var command = new SqlCommand(
-            """
-            INSERT INTO dbo.Incidencias
-            (
-                CodigoCaso,
-                UsuarioReportaId,
-                TipoIncidenciaId,
-                UbicacionId,
-                InstitucionAsignadaId,
-                Estado,
-                Prioridad,
-                Descripcion
-            )
-            OUTPUT INSERTED.Id
-            VALUES
-            (
-                @CaseCode,
-                @ReportingUserId,
-                @IncidentTypeId,
-                @LocationId,
-                @AssignedInstitutionId,
-                'Registrada',
-                @Priority,
-                @Description
-            );
-            """,
-            connection,
-            transaction);
+        using var command =
+            new SqlCommand(
+                """
+                INSERT INTO dbo.Incidencias
+                (
+                    CodigoCaso,
+                    UsuarioReportaId,
+                    TipoIncidenciaId,
+                    ActivoId,
+                    UbicacionId,
+                    InstitucionAsignadaId,
+                    Estado,
+                    Prioridad,
+                    Descripcion
+                )
+                OUTPUT INSERTED.Id
+                VALUES
+                (
+                    @CaseCode,
+                    @ReportingUserId,
+                    @IncidentTypeId,
+                    @ActivoId,
+                    @LocationId,
+                    @AssignedInstitutionId,
+                    'Registrada',
+                    @Priority,
+                    @Description
+                );
+                """,
+                connection,
+                transaction);
 
         command.Parameters.Add(
             "@CaseCode",
             SqlDbType.NVarChar,
-            50).Value = caseCode;
+            50).Value =
+            caseCode;
 
         command.Parameters.Add(
             "@ReportingUserId",
-            SqlDbType.Int).Value = reportingUserId;
+            SqlDbType.Int).Value =
+            reportingUserId;
 
         command.Parameters.Add(
             "@IncidentTypeId",
             SqlDbType.Int).Value =
             incident.TipoIncidenciaId;
 
+        AddNullableInt(
+            command,
+            "@ActivoId",
+            incident.ActivoId);
+
         command.Parameters.Add(
             "@LocationId",
-            SqlDbType.Int).Value = locationId;
+            SqlDbType.Int).Value =
+            locationId;
 
         AddNullableInt(
             command,
@@ -560,130 +681,182 @@ public sealed class IncidentRepository : IIncidentRepository
         command.Parameters.Add(
             "@Priority",
             SqlDbType.NVarChar,
-            20).Value = incident.Prioridad;
+            20).Value =
+            incident.Prioridad;
 
         command.Parameters.Add(
             "@Description",
             SqlDbType.NVarChar,
-            1000).Value = incident.Descripcion;
+            1000).Value =
+            incident.Descripcion;
 
         var result =
-            await command.ExecuteScalarAsync(cancellationToken);
+            await command.ExecuteScalarAsync(
+                cancellationToken);
 
-        return Convert.ToInt32(result);
+        return Convert.ToInt32(
+            result);
     }
 
-    private static async Task<(int IncidentTypeId, int LocationId)?>
+    private static async Task<
+        (int IncidentTypeId, int LocationId)?>
         GetCurrentIncidentDataAsync(
             SqlConnection connection,
             SqlTransaction transaction,
             int id,
             CancellationToken cancellationToken)
     {
-        using var command = new SqlCommand(
-            """
-            SELECT
-                TipoIncidenciaId,
-                UbicacionId
-            FROM dbo.Incidencias
-            WHERE Id = @Id;
-            """,
-            connection,
-            transaction);
+        using var command =
+            new SqlCommand(
+                """
+                SELECT
+                    TipoIncidenciaId,
+                    UbicacionId
+                FROM dbo.Incidencias
+                WHERE Id = @Id;
+                """,
+                connection,
+                transaction);
 
         command.Parameters.Add(
             "@Id",
-            SqlDbType.Int).Value = id;
+            SqlDbType.Int).Value =
+            id;
 
         using var reader =
-            await command.ExecuteReaderAsync(cancellationToken);
+            await command.ExecuteReaderAsync(
+                cancellationToken);
 
-        if (!await reader.ReadAsync(cancellationToken))
+        if (!await reader.ReadAsync(
+                cancellationToken))
         {
             return null;
         }
 
         return (
             reader.GetInt32(
-                reader.GetOrdinal("TipoIncidenciaId")),
+                reader.GetOrdinal(
+                    "TipoIncidenciaId")),
             reader.GetInt32(
-                reader.GetOrdinal("UbicacionId"))
+                reader.GetOrdinal(
+                    "UbicacionId"))
         );
     }
 
-    private static IncidentDto Map(SqlDataReader reader)
+    private static IncidentDto Map(
+        SqlDataReader reader)
     {
         return new IncidentDto
         {
-            Id = reader.GetInt32(
-                reader.GetOrdinal("Id")),
+            Id =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "Id")),
 
-            CodigoCaso = reader.GetString(
-                reader.GetOrdinal("CodigoCaso")),
+            CodigoCaso =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "CodigoCaso")),
 
-            UsuarioReportaId = reader.GetInt32(
-                reader.GetOrdinal("UsuarioReportaId")),
+            UsuarioReportaId =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "UsuarioReportaId")),
 
-            UsuarioReporta = reader.GetString(
-                reader.GetOrdinal("UsuarioReporta")),
+            UsuarioReporta =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "UsuarioReporta")),
 
-            TipoIncidenciaId = reader.GetInt32(
-                reader.GetOrdinal("TipoIncidenciaId")),
+            TipoIncidenciaId =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "TipoIncidenciaId")),
 
-            TipoIncidencia = reader.GetString(
-                reader.GetOrdinal("TipoIncidencia")),
+            TipoIncidencia =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "TipoIncidencia")),
 
-            UbicacionId = reader.GetInt32(
-                reader.GetOrdinal("UbicacionId")),
+            ActivoId =
+                GetNullableInt(
+                    reader,
+                    "ActivoId"),
 
-            Direccion = reader.GetString(
-                reader.GetOrdinal("Direccion")),
+            UbicacionId =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "UbicacionId")),
 
-            Referencia = GetNullableString(
-                reader,
-                "Referencia"),
+            Direccion =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "Direccion")),
 
-            Latitud = GetNullableDecimal(
-                reader,
-                "Latitud"),
+            Referencia =
+                GetNullableString(
+                    reader,
+                    "Referencia"),
 
-            Longitud = GetNullableDecimal(
-                reader,
-                "Longitud"),
+            Latitud =
+                GetNullableDecimal(
+                    reader,
+                    "Latitud"),
 
-            JurisdiccionId = reader.GetInt32(
-                reader.GetOrdinal("JurisdiccionId")),
+            Longitud =
+                GetNullableDecimal(
+                    reader,
+                    "Longitud"),
 
-            Jurisdiccion = reader.GetString(
-                reader.GetOrdinal("Jurisdiccion")),
+            JurisdiccionId =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "JurisdiccionId")),
 
-            InstitucionAsignadaId = GetNullableInt(
-                reader,
-                "InstitucionAsignadaId"),
+            Jurisdiccion =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "Jurisdiccion")),
 
-            InstitucionAsignada = GetNullableString(
-                reader,
-                "InstitucionAsignada"),
+            InstitucionAsignadaId =
+                GetNullableInt(
+                    reader,
+                    "InstitucionAsignadaId"),
 
-            Estado = reader.GetString(
-                reader.GetOrdinal("Estado")),
+            InstitucionAsignada =
+                GetNullableString(
+                    reader,
+                    "InstitucionAsignada"),
 
-            Prioridad = reader.GetString(
-                reader.GetOrdinal("Prioridad")),
+            Estado =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "Estado")),
 
-            Descripcion = reader.GetString(
-                reader.GetOrdinal("Descripcion")),
+            Prioridad =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "Prioridad")),
 
-            FechaReporte = reader.GetDateTime(
-                reader.GetOrdinal("FechaReporte")),
+            Descripcion =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "Descripcion")),
 
-            FechaAsignacion = GetNullableDateTime(
-                reader,
-                "FechaAsignacion"),
+            FechaReporte =
+                reader.GetDateTime(
+                    reader.GetOrdinal(
+                        "FechaReporte")),
 
-            FechaCierre = GetNullableDateTime(
-                reader,
-                "FechaCierre")
+            FechaAsignacion =
+                GetNullableDateTime(
+                    reader,
+                    "FechaAsignacion"),
+
+            FechaCierre =
+                GetNullableDateTime(
+                    reader,
+                    "FechaCierre")
         };
     }
 
@@ -710,7 +883,8 @@ public sealed class IncidentRepository : IIncidentRepository
             parameterName,
             SqlDbType.NVarChar,
             size).Value =
-            string.IsNullOrWhiteSpace(value)
+            string.IsNullOrWhiteSpace(
+                value)
                 ? DBNull.Value
                 : value;
     }
@@ -722,12 +896,17 @@ public sealed class IncidentRepository : IIncidentRepository
         byte precision,
         byte scale)
     {
-        var parameter = command.Parameters.Add(
-            parameterName,
-            SqlDbType.Decimal);
+        var parameter =
+            command.Parameters.Add(
+                parameterName,
+                SqlDbType.Decimal);
 
-        parameter.Precision = precision;
-        parameter.Scale = scale;
+        parameter.Precision =
+            precision;
+
+        parameter.Scale =
+            scale;
+
         parameter.Value =
             value.HasValue
                 ? value.Value
@@ -738,43 +917,59 @@ public sealed class IncidentRepository : IIncidentRepository
         SqlDataReader reader,
         string columnName)
     {
-        var ordinal = reader.GetOrdinal(columnName);
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
 
-        return reader.IsDBNull(ordinal)
+        return reader.IsDBNull(
+            ordinal)
             ? null
-            : reader.GetInt32(ordinal);
+            : reader.GetInt32(
+                ordinal);
     }
 
     private static decimal? GetNullableDecimal(
         SqlDataReader reader,
         string columnName)
     {
-        var ordinal = reader.GetOrdinal(columnName);
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
 
-        return reader.IsDBNull(ordinal)
+        return reader.IsDBNull(
+            ordinal)
             ? null
-            : reader.GetDecimal(ordinal);
+            : reader.GetDecimal(
+                ordinal);
     }
 
     private static string? GetNullableString(
         SqlDataReader reader,
         string columnName)
     {
-        var ordinal = reader.GetOrdinal(columnName);
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
 
-        return reader.IsDBNull(ordinal)
+        return reader.IsDBNull(
+            ordinal)
             ? null
-            : reader.GetString(ordinal);
+            : reader.GetString(
+                ordinal);
     }
 
     private static DateTime? GetNullableDateTime(
         SqlDataReader reader,
         string columnName)
     {
-        var ordinal = reader.GetOrdinal(columnName);
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
 
-        return reader.IsDBNull(ordinal)
+        return reader.IsDBNull(
+            ordinal)
             ? null
-            : reader.GetDateTime(ordinal);
+            : reader.GetDateTime(
+                ordinal);
     }
 }
