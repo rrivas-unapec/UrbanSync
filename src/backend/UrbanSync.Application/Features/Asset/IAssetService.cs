@@ -1,21 +1,20 @@
-﻿
-namespace UrbanSync.Application.Features.Asset
+﻿namespace UrbanSync.Application.Features.Asset;
+
+public interface IAssetService
 {
-    public interface IAssetService
-    {
-        Task<IReadOnlyList<AssetDto>> GetAllAsync(
-            CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AssetDto>> GetAllAsync(
+        CancellationToken cancellationToken = default);
 
-        Task<AssetDto?> GetByIdAsync(
+    Task<AssetDto?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AssetHistoryDto>?>
+        GetHistoryByIdAsync(
             int id,
             CancellationToken cancellationToken = default);
 
-        Task<AssetHistoryDto?> GetHistoryByIdAsync(
-            int id,
-            CancellationToken cancellationToken = default);
-
-        Task<AssetDto> CreateAsync(
-            CreateAssetDto dto,
-            CancellationToken cancellationToken = default);
-    }
+    Task<AssetDto> CreateAsync(
+        CreateAssetDto dto,
+        CancellationToken cancellationToken = default);
 }

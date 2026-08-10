@@ -1,22 +1,22 @@
 ﻿using UrbanSync.Application.Features.Asset;
 
-namespace UrbanSync.Application.Common.Interfaces.Persistence
+namespace UrbanSync.Application.Common.Interfaces.Persistence;
+
+public interface IAssetRepository
 {
-    public interface IAssetRepository
-    {
-        Task<IReadOnlyList<AssetDto>> GetAllAsync(
-                CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AssetDto>> GetAllAsync(
+        CancellationToken cancellationToken = default);
 
-        Task<AssetDto?> GetByIdAsync(
+    Task<AssetDto?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AssetHistoryDto>>
+        GetHistoryByIdAsync(
             int id,
             CancellationToken cancellationToken = default);
 
-        Task<AssetHistoryDto?> GetHistoryByIdAsync(
-            int id,
-            CancellationToken cancellationToken = default);
-
-        Task<int> CreateAsync(
-            CreateAssetDto asset,
-            CancellationToken cancellationToken = default);
-    }
+    Task<int> CreateAsync(
+        CreateAssetDto asset,
+        CancellationToken cancellationToken = default);
 }

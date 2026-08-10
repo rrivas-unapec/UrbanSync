@@ -1,17 +1,20 @@
-﻿namespace UrbanSync.Api.Contracts.Assets
+﻿namespace UrbanSync.Api.Contracts.Assets;
+
+public sealed class AssetHistoryResponse
 {
-    public sealed class CreateAssetRequest
-    {
-        public string Code { get; set; } = string.Empty;
+    public int IncidentId { get; set; }
 
-        public string Name { get; set; } = string.Empty;
+    public string CaseCode { get; set; } =
+        string.Empty;
 
-        public string Type { get; set; } = string.Empty;
+    public string IncidentType { get; set; } =
+        string.Empty;
 
-        public string Status { get; set; } = "Operativo";
+    public string Description { get; set; } =
+        string.Empty;
 
-        public int JurisdictionId { get; set; }
+    public string Status { get; set; } =
+        string.Empty;
 
-        public DateTime? InstallationDate { get; set; }
-    }
+    public DateTime ReportDate { get; set; }
 }

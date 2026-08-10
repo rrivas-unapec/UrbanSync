@@ -1,146 +1,328 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Data;
+using Microsoft.Data.SqlClient;
 using UrbanSync.Application.Common.Interfaces.Persistence;
 using UrbanSync.Application.Features.Asset;
 using UrbanSync.Infrastructure.Persistence.Connections;
 
-namespace UrbanSync.Infrastructure.Persistence.Repositories
+namespace UrbanSync.Infrastructure.Persistence.Repositories;
+
+public sealed class AssetRepository : IAssetRepository
 {
-    public sealed class AssetRepository : IAssetRepository
+    private readonly IDbConnectionFactory
+        _connectionFactory;
+
+    public AssetRepository(
+        IDbConnectionFactory connectionFactory)
     {
-        private readonly IDbConnectionFactory _connectionFactory;
+        _connectionFactory =
+            connectionFactory;
+    }
 
-        public AssetRepository(IDbConnectionFactory connectionFactory)
-        {
-            _connectionFactory = connectionFactory;
-        }
-
-        public async Task<IReadOnlyList<AssetDto>> GetAllAsync(
+    public async Task<IReadOnlyList<AssetDto>>
+        GetAllAsync(
             CancellationToken cancellationToken = default)
+    {
+        var assets =
+            new List<AssetDto>();
+
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        using var command =
+            new SqlCommand(
+                """
+                SELECT
+                    a.Id,
+                    a.Codigo,
+                    a.Nombre,
+                    a.Tipo,
+                    a.Estado,
+                    a.JurisdiccionId,
+                    j.Nombre AS NombreJurisdiccion,
+                    a.FechaInstalacion,
+                    a.Activo
+                FROM dbo.Activos a
+                INNER JOIN dbo.Jurisdicciones j
+                    ON a.JurisdiccionId = j.Id
+                WHERE a.Activo = 1
+                ORDER BY a.Id DESC;
+                """,
+                connection);
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        while (await reader.ReadAsync(
+                   cancellationToken))
         {
-            var list = new List<AssetDto>();
-            using var conn = _connectionFactory.CreateConnection();
-            await conn.OpenAsync(cancellationToken);
-
-            const string query = @"
-            SELECT a.Id, a.Codigo, a.Nombre, a.Tipo, a.Estado, a.JurisdiccionId, 
-                   j.Nombre AS NombreJurisdiccion, a.FechaInstalacion, a.Activo
-            FROM dbo.Activos a
-            INNER JOIN dbo.Jurisdicciones j ON a.JurisdiccionId = j.Id
-            WHERE a.Activo = 1
-            ORDER BY a.Id DESC;";
-
-            using var cmd = new SqlCommand(query, (SqlConnection)conn);
-            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                list.Add(MapReaderToDto(reader));
-            }
-
-            return list;
+            assets.Add(
+                MapReaderToDto(reader));
         }
 
-        public async Task<AssetDto?> GetByIdAsync(
+        return assets;
+    }
+
+    public async Task<AssetDto?> GetByIdAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        using var command =
+            new SqlCommand(
+                """
+                SELECT
+                    a.Id,
+                    a.Codigo,
+                    a.Nombre,
+                    a.Tipo,
+                    a.Estado,
+                    a.JurisdiccionId,
+                    j.Nombre AS NombreJurisdiccion,
+                    a.FechaInstalacion,
+                    a.Activo
+                FROM dbo.Activos a
+                INNER JOIN dbo.Jurisdicciones j
+                    ON a.JurisdiccionId = j.Id
+                WHERE a.Id = @Id;
+                """,
+                connection);
+
+        command.Parameters.Add(
+            "@Id",
+            SqlDbType.Int).Value = id;
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        return await reader.ReadAsync(
+            cancellationToken)
+            ? MapReaderToDto(reader)
+            : null;
+    }
+
+    public async Task<IReadOnlyList<AssetHistoryDto>>
+        GetHistoryByIdAsync(
             int id,
             CancellationToken cancellationToken = default)
+    {
+        var history =
+            new List<AssetHistoryDto>();
+
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        using var command =
+            new SqlCommand(
+                """
+                SELECT
+                    i.Id AS IncidentId,
+                    i.CodigoCaso,
+                    ti.Nombre AS IncidentType,
+                    i.Descripcion,
+                    i.Estado,
+                    i.FechaReporte
+                FROM dbo.Incidencias i
+                INNER JOIN dbo.TiposIncidencia ti
+                    ON i.TipoIncidenciaId = ti.Id
+                WHERE i.ActivoId = @AssetId
+                ORDER BY i.FechaReporte DESC;
+                """,
+                connection);
+
+        command.Parameters.Add(
+            "@AssetId",
+            SqlDbType.Int).Value = id;
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        while (await reader.ReadAsync(
+                   cancellationToken))
         {
-            using var conn = _connectionFactory.CreateConnection();
-            await conn.OpenAsync(cancellationToken);
-
-            const string query = @"
-            SELECT a.Id, a.Codigo, a.Nombre, a.Tipo, a.Estado, a.JurisdiccionId, 
-                   j.Nombre AS NombreJurisdiccion, a.FechaInstalacion, a.Activo
-            FROM dbo.Activos a
-            INNER JOIN dbo.Jurisdicciones j ON a.JurisdiccionId = j.Id
-            WHERE a.Id = @Id;";
-
-            using var cmd = new SqlCommand(query, (SqlConnection)conn);
-            cmd.Parameters.AddWithValue("@Id", id);
-
-            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-            if (await reader.ReadAsync(cancellationToken))
-            {
-                return MapReaderToDto(reader);
-            }
-
-            return null;
-        }
-
-        public async Task<AssetHistoryDto?> GetHistoryByIdAsync(
-         int id,
-         CancellationToken cancellationToken = default)
-            {
-                using var conn = _connectionFactory.CreateConnection();
-                await conn.OpenAsync(cancellationToken);
-
-                const string query = @"
-            SELECT TOP 1 i.Id AS IncidentId, i.CodigoCaso, ti.Nombre AS IncidentType, 
-                   i.Descripcion, i.Estado, i.FechaReporte
-            FROM dbo.Incidencias i
-            INNER JOIN dbo.TiposIncidencia ti ON i.TipoIncidenciaId = ti.Id
-            INNER JOIN dbo.Ubicaciones u ON i.UbicacionId = u.Id
-            INNER JOIN dbo.Activos a ON a.JurisdiccionId = u.JurisdiccionId
-            WHERE a.Id = @AssetId
-            ORDER BY i.FechaReporte DESC;";
-
-            using var cmd = new SqlCommand(query, (SqlConnection)conn);
-            cmd.Parameters.AddWithValue("@AssetId", id);
-
-            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-            if (await reader.ReadAsync(cancellationToken))
-            {
-                return new AssetHistoryDto
+            history.Add(
+                new AssetHistoryDto
                 {
-                    IncidentId = reader.GetInt32(reader.GetOrdinal("IncidentId")),
-                    CaseCode = reader.GetString(reader.GetOrdinal("CodigoCaso")),
-                    IncidentType = reader.GetString(reader.GetOrdinal("IncidentType")),
-                    Description = reader.GetString(reader.GetOrdinal("Descripcion")),
-                    Status = reader.GetString(reader.GetOrdinal("Estado")),
-                    ReportDate = reader.GetDateTime(reader.GetOrdinal("FechaReporte"))
-                };
-            }
+                    IncidentId =
+                        reader.GetInt32(
+                            reader.GetOrdinal(
+                                "IncidentId")),
 
-            return null;
+                    CaseCode =
+                        reader.GetString(
+                            reader.GetOrdinal(
+                                "CodigoCaso")),
+
+                    IncidentType =
+                        reader.GetString(
+                            reader.GetOrdinal(
+                                "IncidentType")),
+
+                    Description =
+                        reader.GetString(
+                            reader.GetOrdinal(
+                                "Descripcion")),
+
+                    Status =
+                        reader.GetString(
+                            reader.GetOrdinal(
+                                "Estado")),
+
+                    ReportDate =
+                        reader.GetDateTime(
+                            reader.GetOrdinal(
+                                "FechaReporte"))
+                });
         }
 
-        public async Task<int> CreateAsync(
-            CreateAssetDto dto,
-            CancellationToken cancellationToken = default)
+        return history;
+    }
+
+    public async Task<int> CreateAsync(
+        CreateAssetDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        using var connection =
+            _connectionFactory.CreateConnection();
+
+        using var command =
+            new SqlCommand(
+                """
+                INSERT INTO dbo.Activos
+                (
+                    Codigo,
+                    Nombre,
+                    Tipo,
+                    Estado,
+                    JurisdiccionId,
+                    FechaInstalacion
+                )
+                OUTPUT INSERTED.Id
+                VALUES
+                (
+                    @Codigo,
+                    @Nombre,
+                    @Tipo,
+                    @Estado,
+                    @JurisdiccionId,
+                    ISNULL(
+                        @FechaInstalacion,
+                        SYSDATETIME()
+                    )
+                );
+                """,
+                connection);
+
+        command.Parameters.Add(
+            "@Codigo",
+            SqlDbType.NVarChar,
+            50).Value = dto.Code;
+
+        command.Parameters.Add(
+            "@Nombre",
+            SqlDbType.NVarChar,
+            100).Value = dto.Name;
+
+        command.Parameters.Add(
+            "@Tipo",
+            SqlDbType.NVarChar,
+            50).Value = dto.Type;
+
+        command.Parameters.Add(
+            "@Estado",
+            SqlDbType.NVarChar,
+            30).Value = dto.Status;
+
+        command.Parameters.Add(
+            "@JurisdiccionId",
+            SqlDbType.Int).Value =
+            dto.JurisdictionId;
+
+        command.Parameters.Add(
+            "@FechaInstalacion",
+            SqlDbType.DateTime2).Value =
+            dto.InstallationDate.HasValue
+                ? dto.InstallationDate.Value
+                : DBNull.Value;
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        var result =
+            await command.ExecuteScalarAsync(
+                cancellationToken);
+
+        return Convert.ToInt32(result);
+    }
+
+    private static AssetDto MapReaderToDto(
+        SqlDataReader reader)
+    {
+        return new AssetDto
         {
-            using var conn = _connectionFactory.CreateConnection();
-            await conn.OpenAsync(cancellationToken);
+            Id =
+                reader.GetInt32(
+                    reader.GetOrdinal("Id")),
 
-            const string query = @"
-            INSERT INTO dbo.Activos (Codigo, Nombre, Tipo, Estado, JurisdiccionId, FechaInstalacion)
-            OUTPUT INSERTED.Id
-            VALUES (@Codigo, @Nombre, @Tipo, @Estado, @JurisdiccionId, ISNULL(@FechaInstalacion, SYSDATETIME()));";
+            Code =
+                reader.GetString(
+                    reader.GetOrdinal("Codigo")),
 
-            using var cmd = new SqlCommand(query, (SqlConnection)conn);
-            cmd.Parameters.AddWithValue("@Codigo", dto.Code);
-            cmd.Parameters.AddWithValue("@Nombre", dto.Name);
-            cmd.Parameters.AddWithValue("@Tipo", dto.Type);
-            cmd.Parameters.AddWithValue("@Estado", dto.Status);
-            cmd.Parameters.AddWithValue("@JurisdiccionId", dto.JurisdictionId);
-            cmd.Parameters.AddWithValue("@FechaInstalacion", (object?)dto.InstallationDate ?? DBNull.Value);
+            Name =
+                reader.GetString(
+                    reader.GetOrdinal("Nombre")),
 
-            var result = await cmd.ExecuteScalarAsync(cancellationToken);
-            return Convert.ToInt32(result);
-        }
+            Type =
+                reader.GetString(
+                    reader.GetOrdinal("Tipo")),
 
-        private static AssetDto MapReaderToDto(SqlDataReader reader)
-        {
-            return new AssetDto
-            {
-                Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                Code = reader.GetString(reader.GetOrdinal("Codigo")),
-                Name = reader.GetString(reader.GetOrdinal("Nombre")),
-                Type = reader.GetString(reader.GetOrdinal("Tipo")),
-                Status = reader.GetString(reader.GetOrdinal("Estado")),
-                JurisdictionId = reader.GetInt32(reader.GetOrdinal("JurisdiccionId")),
-                JurisdictionName = reader.GetString(reader.GetOrdinal("NombreJurisdiccion")),
-                InstallationDate = reader.IsDBNull(reader.GetOrdinal("FechaInstalacion")) ? null : reader.GetDateTime(reader.GetOrdinal("FechaInstalacion")),
-                IsActive = reader.GetBoolean(reader.GetOrdinal("Activo"))
-            };
-        }
+            Status =
+                reader.GetString(
+                    reader.GetOrdinal("Estado")),
+
+            JurisdictionId =
+                reader.GetInt32(
+                    reader.GetOrdinal(
+                        "JurisdiccionId")),
+
+            JurisdictionName =
+                reader.GetString(
+                    reader.GetOrdinal(
+                        "NombreJurisdiccion")),
+
+            InstallationDate =
+                GetNullableDateTime(
+                    reader,
+                    "FechaInstalacion"),
+
+            IsActive =
+                reader.GetBoolean(
+                    reader.GetOrdinal("Activo"))
+        };
+    }
+
+    private static DateTime? GetNullableDateTime(
+        SqlDataReader reader,
+        string columnName)
+    {
+        var ordinal =
+            reader.GetOrdinal(columnName);
+
+        return reader.IsDBNull(ordinal)
+            ? null
+            : reader.GetDateTime(ordinal);
     }
 }
