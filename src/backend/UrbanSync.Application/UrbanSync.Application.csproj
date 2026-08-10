@@ -1,13 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference
-      Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
+    <ProjectReference Include="..\UrbanSync.Domain\UrbanSync.Domain.csproj" />
   </ItemGroup>
 
 </Project>
