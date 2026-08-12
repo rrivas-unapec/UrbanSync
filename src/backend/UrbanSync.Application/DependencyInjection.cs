@@ -10,6 +10,7 @@ using UrbanSync.Application.Features.Departament;
 using UrbanSync.Application.Features.Institution;
 using UrbanSync.Application.Features.Evidence;
 using UrbanSync.Application.Features.Location;
+using UrbanSync.Application.Features.TechnicalAnalysis;
 
 namespace UrbanSync.Application;
 
@@ -65,6 +66,10 @@ public static class DependencyInjection
         services.AddScoped<
             ILocationService,
             LocationService>();
+
+        services.AddScoped<
+            ITechnicalAnalysisService,
+            TechnicalAnalysisService>();
 
         return services;
     }
