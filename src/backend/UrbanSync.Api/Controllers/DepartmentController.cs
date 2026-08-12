@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Api.Contracts.Departaments;
-using UrbanSync.Api.Contracts.Department;
-using UrbanSync.Application.Features.Department;
+using UrbanSync.Api.Contracts.Departaments;
+using UrbanSync.Application.Features.Departament;
 
 namespace UrbanSync.Api.Controllers;
 
