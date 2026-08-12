@@ -1,5 +1,4 @@
 using UrbanSync.Web.ApiClients.Incidents;
-using UrbanSync.Web.ApiClients.Reports;
 using UrbanSync.Web.ApiClients.WorkOrders;
 using UrbanSync.Web.ViewModels;
 
@@ -24,18 +23,15 @@ public sealed class DashboardPageService : IDashboardPageService
         "#7C3AED"
     ];
 
-    private readonly IReportsApiClient _reportsApiClient;
     private readonly IIncidentsApiClient _incidentsApiClient;
     private readonly IWorkOrdersApiClient _workOrdersApiClient;
     private readonly ILogger<DashboardPageService> _logger;
 
     public DashboardPageService(
-        IReportsApiClient reportsApiClient,
         IIncidentsApiClient incidentsApiClient,
         IWorkOrdersApiClient workOrdersApiClient,
         ILogger<DashboardPageService> logger)
     {
-        _reportsApiClient = reportsApiClient;
         _incidentsApiClient = incidentsApiClient;
         _workOrdersApiClient = workOrdersApiClient;
         _logger = logger;
@@ -46,19 +42,17 @@ public sealed class DashboardPageService : IDashboardPageService
     {
         try
         {
-            var summary = await _reportsApiClient.GetSummaryAsync(
-                cancellationToken);
+            var incidents = await _incidentsApiClient.GetAllAsync(
+                cancellationToken: cancellationToken);
 
             return new PanelPrincipalViewModel
             {
                 DatosDisponibles = true,
-                TotalReportes = summary?.Total ?? 0,
-                OrdenesActivas = summary?.PorEstado
-                    .Where(status =>
-                        ActiveStatuses.Contains(
-                            status.Clave,
-                            StringComparer.OrdinalIgnoreCase))
-                    .Sum(status => status.Total) ?? 0
+                TotalReportes = incidents.Count,
+                OrdenesActivas = incidents.Count(incident =>
+                    ActiveStatuses.Contains(
+                        incident.Estado,
+                        StringComparer.OrdinalIgnoreCase))
             };
         }
         catch (Exception exception)
