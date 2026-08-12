@@ -63,6 +63,11 @@ public static class DependencyInjection
             IInstitutionRepository,
             InstitutionRepository>();
 
+
+        services.AddScoped<
+            ILocationRepository,
+            LocationRepository>();
+
         services.AddScoped<
             IEvidenceRepository,
             EvidenceRepository>();
