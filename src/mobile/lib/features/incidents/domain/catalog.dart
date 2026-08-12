@@ -15,8 +15,6 @@ class IncidentType {
   final String? descripcion;
   final bool activo;
 
-  /// El API expone este catálogo con nombres en inglés
-  /// (`name`, `institutionId`, `isActive`).
   factory IncidentType.fromJson(Map<String, dynamic> json) => IncidentType(
     id: (json['id'] as num).toInt(),
     nombre: json['name'] as String? ?? '',

@@ -33,8 +33,6 @@ class IncidentWorkRepository {
   Future<List<IncidentEvidence>> evidences(int incidentId) =>
       _listByIncident('evidences', incidentId, IncidentEvidence.fromJson);
 
-  /// El API registra la evidencia como metadato: recibe la ruta del archivo,
-  /// no el archivo en sí. La subida binaria no está expuesta.
   Future<IncidentEvidence> createEvidence({
     required int incidenciaId,
     required String tipoEvidencia,
@@ -59,7 +57,6 @@ class IncidentWorkRepository {
     }
   }
 
-  /// Devuelve `null` cuando la incidencia todavía no tiene análisis (404).
   Future<TechnicalAnalysis?> technicalAnalysis(int incidentId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(

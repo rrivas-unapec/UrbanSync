@@ -171,9 +171,6 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
     );
   }
 
-  /// Las pestañas siguen los roles de lectura del API: evidencias las ve
-  /// cualquiera, análisis/trabajos/reportes solo gestión y técnicos, y la
-  /// auditoría solo gestión.
   List<_DetailTab> _tabsFor(AppUser? user, Widget info) {
     final id = widget.incidentId;
 

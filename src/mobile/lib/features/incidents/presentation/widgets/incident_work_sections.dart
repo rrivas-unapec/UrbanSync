@@ -10,8 +10,6 @@ import '../../../../shared/widgets/status_chip.dart';
 import '../../domain/incident_work.dart';
 import '../incident_work_providers.dart';
 
-/// Envuelve las secciones del detalle con los tres estados obligatorios y
-/// pull-to-refresh, para no repetirlo en cada pestaña.
 class _SectionShell<T> extends StatelessWidget {
   const _SectionShell({
     required this.async,

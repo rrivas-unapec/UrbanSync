@@ -12,7 +12,6 @@ import '../data/claims_repository.dart';
 import '../domain/claim.dart';
 import 'claims_providers.dart';
 
-/// Valores documentados en el esquema de SolicitudesReclamaciones.
 const _estados = ['Abierta', 'EnProceso', 'Cerrada', 'Rechazada'];
 
 class ClaimDetailPage extends ConsumerStatefulWidget {

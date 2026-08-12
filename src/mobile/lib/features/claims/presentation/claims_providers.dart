@@ -4,7 +4,6 @@ import '../../auth/presentation/auth_controller.dart';
 import '../data/claims_repository.dart';
 import '../domain/claim.dart';
 
-/// El ciudadano solo puede leer las suyas; gestión ve todas.
 final claimsProvider = FutureProvider.autoDispose<List<Claim>>((ref) {
   final user = ref.watch(authControllerProvider).user;
   final repository = ref.read(claimsRepositoryProvider);
