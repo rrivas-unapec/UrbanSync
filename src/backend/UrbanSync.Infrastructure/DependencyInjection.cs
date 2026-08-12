@@ -69,6 +69,10 @@ public static class DependencyInjection
             LocationRepository>();
 
         services.AddScoped<
+            IEvidenceRepository,
+            EvidenceRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 

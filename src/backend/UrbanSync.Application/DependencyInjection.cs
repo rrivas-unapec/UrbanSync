@@ -8,6 +8,7 @@ using UrbanSync.Application.Features.Users;
 using UrbanSync.Application.Features.Jurisdiction;
 using UrbanSync.Application.Features.Departament;
 using UrbanSync.Application.Features.Institution;
+using UrbanSync.Application.Features.Evidence;
 using UrbanSync.Application.Features.Location;
 
 namespace UrbanSync.Application;
@@ -57,6 +58,10 @@ public static class DependencyInjection
             IInstitutionService,
             InstitutionService>();
 
+        services.AddScoped<
+            IEvidenceService,
+            EvidenceService>();
+        
         services.AddScoped<
             ILocationService,
             LocationService>();
