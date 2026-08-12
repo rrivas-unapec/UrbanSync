@@ -13,6 +13,7 @@ using UrbanSync.Application.Features.Location;
 using UrbanSync.Application.Features.TechnicalAnalysis;
 using UrbanSync.Application.Features.Job;
 using UrbanSync.Application.Features.Claim;
+using UrbanSync.Application.Features.Report;
 
 namespace UrbanSync.Application;
 
@@ -80,6 +81,10 @@ public static class DependencyInjection
         services.AddScoped<
             IClaimService,
             ClaimService>();
+
+        services.AddScoped<
+            IReportService,
+            ReportService>();
 
         return services;
     }
