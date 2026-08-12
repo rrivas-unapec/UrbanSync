@@ -63,14 +63,17 @@ public static class DependencyInjection
             IInstitutionRepository,
             InstitutionRepository>();
 
+        services.AddScoped<
+            IEvidenceRepository,
+            EvidenceRepository>();
 
         services.AddScoped<
             ILocationRepository,
             LocationRepository>();
 
         services.AddScoped<
-            IEvidenceRepository,
-            EvidenceRepository>();
+            ITechnicalAnalysisRepository,
+            TechnicalAnalysisRepository>();
 
         services.AddScoped<
             IPasswordHasher,
