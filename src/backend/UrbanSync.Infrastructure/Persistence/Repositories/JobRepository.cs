@@ -19,6 +19,35 @@ namespace UrbanSync.Infrastructure.Persistence.Repositories
             _dbFactory = dbFactory;
         }
 
+        public async Task<IReadOnlyList<JobDto>> GetAllAsync(
+            string? status = null,
+            CancellationToken cancellationToken = default)
+        {
+            var list = new List<JobDto>();
+            using var conn = _dbFactory.CreateConnection();
+            await conn.OpenAsync(cancellationToken);
+
+            const string query = @"
+            SELECT t.Id, t.IncidenciaId, i.CodigoCaso, t.UsuarioAsignadoId, u.NombreUsuario,
+                   t.DescripcionTrabajo, t.Estado, t.FechaInicio, t.FechaFin, t.Resultado
+            FROM dbo.Trabajos t
+            INNER JOIN dbo.Usuarios u ON t.UsuarioAsignadoId = u.Id
+            INNER JOIN dbo.Incidencias i ON t.IncidenciaId = i.Id
+            WHERE (@Estado IS NULL OR t.Estado = @Estado)
+            ORDER BY t.Id DESC;";
+
+            using var cmd = new SqlCommand(query, (SqlConnection)conn);
+            cmd.Parameters.AddWithValue("@Estado", (object?)status ?? DBNull.Value);
+
+            using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                list.Add(MapReaderToDto(reader));
+            }
+
+            return list;
+        }
+
         public async Task<IReadOnlyList<JobDto>> GetByIncidentIdAsync(
             int incidentId,
             CancellationToken cancellationToken = default)
@@ -28,10 +57,11 @@ namespace UrbanSync.Infrastructure.Persistence.Repositories
             await conn.OpenAsync(cancellationToken);
 
             const string query = @"
-            SELECT t.Id, t.IncidenciaId, t.UsuarioAsignadoId, u.NombreUsuario, 
+            SELECT t.Id, t.IncidenciaId, i.CodigoCaso, t.UsuarioAsignadoId, u.NombreUsuario,
                    t.DescripcionTrabajo, t.Estado, t.FechaInicio, t.FechaFin, t.Resultado
             FROM dbo.Trabajos t
             INNER JOIN dbo.Usuarios u ON t.UsuarioAsignadoId = u.Id
+            INNER JOIN dbo.Incidencias i ON t.IncidenciaId = i.Id
             WHERE t.IncidenciaId = @IncidentId
             ORDER BY t.Id DESC;";
 
@@ -55,10 +85,11 @@ namespace UrbanSync.Infrastructure.Persistence.Repositories
             await conn.OpenAsync(cancellationToken);
 
             const string query = @"
-            SELECT t.Id, t.IncidenciaId, t.UsuarioAsignadoId, u.NombreUsuario, 
+            SELECT t.Id, t.IncidenciaId, i.CodigoCaso, t.UsuarioAsignadoId, u.NombreUsuario,
                    t.DescripcionTrabajo, t.Estado, t.FechaInicio, t.FechaFin, t.Resultado
             FROM dbo.Trabajos t
             INNER JOIN dbo.Usuarios u ON t.UsuarioAsignadoId = u.Id
+            INNER JOIN dbo.Incidencias i ON t.IncidenciaId = i.Id
             WHERE t.Id = @Id;";
 
             using var cmd = new SqlCommand(query, (SqlConnection)conn);
@@ -130,6 +161,7 @@ namespace UrbanSync.Infrastructure.Persistence.Repositories
             {
                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
                 IncidentId = reader.GetInt32(reader.GetOrdinal("IncidenciaId")),
+                CodigoCaso = reader.GetString(reader.GetOrdinal("CodigoCaso")),
                 AssignedUserId = reader.GetInt32(reader.GetOrdinal("UsuarioAsignadoId")),
                 AssignedUserName = reader.GetString(reader.GetOrdinal("NombreUsuario")),
                 JobDescription = reader.GetString(reader.GetOrdinal("DescripcionTrabajo")),

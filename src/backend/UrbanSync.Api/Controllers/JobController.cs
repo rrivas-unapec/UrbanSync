@@ -21,6 +21,17 @@ public sealed class JobsController : ControllerBase
     }
 
     [Authorize(Roles = ReadRoles)]
+    [HttpGet]
+    [ProducesResponseType<IEnumerable<JobResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetAll(
+        [FromQuery] string? status,
+        CancellationToken cancellationToken)
+    {
+        var list = await _jobService.GetAllAsync(status, cancellationToken);
+        return Ok(list.Select(MapResponse));
+    }
+
+    [Authorize(Roles = ReadRoles)]
     [HttpGet("by-incident/{incidentId:int}")]
     [ProducesResponseType<IEnumerable<JobResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetByIncidentId(
@@ -115,6 +126,7 @@ public sealed class JobsController : ControllerBase
         {
             Id = dto.Id,
             IncidentId = dto.IncidentId,
+            CodigoCaso = dto.CodigoCaso,
             AssignedUserId = dto.AssignedUserId,
             AssignedUserName = dto.AssignedUserName,
             JobDescription = dto.JobDescription,

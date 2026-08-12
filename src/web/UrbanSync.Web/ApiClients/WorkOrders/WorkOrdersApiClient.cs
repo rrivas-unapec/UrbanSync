@@ -15,7 +15,7 @@ public sealed class WorkOrdersApiClient
         CancellationToken cancellationToken = default)
     {
         var workOrders = await GetAsync<List<WorkOrderResponse>>(
-            "api/work-orders",
+            "api/jobs",
             cancellationToken);
 
         return workOrders ?? [];

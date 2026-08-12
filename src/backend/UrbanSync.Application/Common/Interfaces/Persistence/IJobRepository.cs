@@ -9,6 +9,10 @@ namespace UrbanSync.Application.Common.Interfaces.Persistence
 {
     public interface IJobRepository
     {
+        Task<IReadOnlyList<JobDto>> GetAllAsync(
+            string? status = null,
+            CancellationToken cancellationToken = default);
+
         Task<IReadOnlyList<JobDto>> GetByIncidentIdAsync(
             int incidentId,
             CancellationToken cancellationToken = default);

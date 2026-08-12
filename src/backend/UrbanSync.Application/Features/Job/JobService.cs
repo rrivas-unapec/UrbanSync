@@ -16,6 +16,13 @@ namespace UrbanSync.Application.Features.Job
             _jobRepository = jobRepository;
         }
 
+        public Task<IReadOnlyList<JobDto>> GetAllAsync(
+            string? status = null,
+            CancellationToken cancellationToken = default)
+        {
+            return _jobRepository.GetAllAsync(status, cancellationToken);
+        }
+
         public Task<IReadOnlyList<JobDto>> GetByIncidentIdAsync(
             int incidentId,
             CancellationToken cancellationToken = default)

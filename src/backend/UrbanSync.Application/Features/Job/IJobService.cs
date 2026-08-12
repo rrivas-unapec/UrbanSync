@@ -8,6 +8,10 @@ namespace UrbanSync.Application.Features.Job
 {
     public interface IJobService
     {
+        Task<IReadOnlyList<JobDto>> GetAllAsync(
+            string? status = null,
+            CancellationToken cancellationToken = default);
+
         Task<IReadOnlyList<JobDto>> GetByIncidentIdAsync(
             int incidentId,
             CancellationToken cancellationToken = default);
