@@ -76,6 +76,10 @@ public static class DependencyInjection
             TechnicalAnalysisRepository>();
 
         services.AddScoped<
+            IJobRepository,
+            JobRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 
