@@ -52,6 +52,10 @@ public static class DependencyInjection
             AssetRepository>();
 
         services.AddScoped<
+            IJurisdictionRepository,
+            JurisdictionRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 

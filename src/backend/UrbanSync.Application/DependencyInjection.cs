@@ -5,6 +5,7 @@ using UrbanSync.Application.Features.Incidents;
 using UrbanSync.Application.Features.IncidentType;
 using UrbanSync.Application.Features.Roles;
 using UrbanSync.Application.Features.Users;
+using UrbanSync.Application.Features.Jurisdiction;
 
 namespace UrbanSync.Application;
 
@@ -40,6 +41,10 @@ public static class DependencyInjection
         services.AddScoped<
             IAssetService,
             AssetService>();
+
+        services.AddScoped<
+            IJurisdictionService,
+            JurisdictionService>();
 
         return services;
     }
