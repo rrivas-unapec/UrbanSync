@@ -13,6 +13,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../shared/utils/validators.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/buttons.dart';
+import '../../auth/presentation/auth_controller.dart';
+import '../data/incident_work_repository.dart';
 import '../data/incidents_repository.dart';
 import '../domain/catalog.dart';
 import '../domain/urban_asset.dart';
@@ -65,7 +67,6 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
           () => _locationNote =
               'Activa la ubicación para autodetectar tu posición.',
         );
-        await _resolveJurisdiction();
         return;
       }
 
@@ -81,7 +82,6 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
           () => _locationNote =
               'Permiso de ubicación denegado. Ajusta el pin manualmente.',
         );
-        await _resolveJurisdiction();
         return;
       }
 
@@ -101,25 +101,12 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
         () => _locationNote =
             'No se pudo obtener la ubicación. Ajusta el pin manualmente.',
       );
-      await _resolveJurisdiction();
     }
   }
 
   void _updatePoint(LatLng point, {bool moveMap = false}) {
     setState(() => _point = point);
     if (moveMap) _mapController.move(point, 16);
-    _resolveJurisdiction();
-  }
-
-  Future<void> _resolveJurisdiction() async {
-    try {
-      final jurisdiction = await ref
-          .read(incidentsRepositoryProvider)
-          .resolveJurisdiction(_point.latitude, _point.longitude);
-      if (mounted) setState(() => _jurisdiccion = jurisdiction);
-    } catch (_) {
-      // La jurisdicción se corrige en triage si no se puede resolver.
-    }
   }
 
   Future<void> _pickPhoto() async {
@@ -179,15 +166,18 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
         activoId: _activo?.id,
       );
 
-      if (_photoPath != null) {
-        await repo.uploadEvidence(
-          incident.id,
-          filePath: _photoPath!,
-          tipo: 'Foto',
-          lat: _point.latitude,
-          lng: _point.longitude,
-          descripcion: 'Evidencia inicial',
-        );
+      final userId = ref.read(authControllerProvider).user?.id;
+
+      if (_photoPath != null && userId != null) {
+        await ref
+            .read(incidentWorkRepositoryProvider)
+            .createEvidence(
+              incidenciaId: incident.id,
+              tipoEvidencia: 'Foto',
+              rutaArchivo: _photoPath!,
+              usuarioSubeId: userId,
+              descripcion: 'Evidencia inicial',
+            );
       }
 
       ref.invalidate(myIncidentsProvider);

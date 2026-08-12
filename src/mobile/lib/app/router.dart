@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/change_password_page.dart';
+import '../features/catalogs/presentation/catalogs_page.dart';
+import '../features/claims/presentation/claim_detail_page.dart';
+import '../features/claims/presentation/claims_page.dart';
+import '../features/claims/presentation/create_claim_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/splash_page.dart';
@@ -48,6 +52,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/change-password',
         builder: (context, state) => const ChangePasswordPage(),
+      ),
+      GoRoute(path: '/claims', builder: (context, state) => const ClaimsPage()),
+      GoRoute(
+        path: '/claims/new',
+        builder: (context, state) => const CreateClaimPage(),
+      ),
+      GoRoute(
+        path: '/claims/:id',
+        builder: (context, state) =>
+            ClaimDetailPage(claimId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(
+        path: '/catalogs',
+        builder: (context, state) => const CatalogsPage(),
       ),
       GoRoute(
         path: '/report',

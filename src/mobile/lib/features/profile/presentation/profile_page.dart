@@ -26,9 +26,7 @@ class ProfilePage extends ConsumerWidget {
           Center(
             child: CircleAvatar(
               radius: 40,
-              backgroundColor: AppColors.primary.withValues(
-                alpha: 0.12,
-              ),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
               child: const Icon(
                 Icons.person,
                 size: 44,
@@ -46,9 +44,7 @@ class ProfilePage extends ConsumerWidget {
           Text(
             user.role,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.mutedForeground,
-            ),
+            style: const TextStyle(color: AppColors.mutedForeground),
           ),
           const SizedBox(height: 24),
           AppCard(
@@ -83,6 +79,26 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
+          if (!user.isTechnician) ...[
+            SecondaryButton(
+              label: user.isCitizen ? 'Mis reclamaciones' : 'Reclamaciones',
+              icon: Icons.support_agent_outlined,
+              onPressed: () {
+                context.push('/claims');
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (!user.isCitizen) ...[
+            SecondaryButton(
+              label: 'Catálogos',
+              icon: Icons.folder_outlined,
+              onPressed: () {
+                context.push('/catalogs');
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
           SecondaryButton(
             label: 'Cambiar contraseña',
             icon: Icons.lock_reset_outlined,
@@ -95,9 +111,7 @@ class ProfilePage extends ConsumerWidget {
             label: 'Cerrar sesión',
             icon: Icons.logout,
             onPressed: () {
-              ref
-                  .read(authControllerProvider.notifier)
-                  .logout();
+              ref.read(authControllerProvider.notifier).logout();
             },
           ),
         ],
@@ -122,11 +136,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: AppColors.mutedForeground,
-        ),
+        Icon(icon, size: 20, color: AppColors.mutedForeground),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -142,9 +152,7 @@ class _InfoRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value.isEmpty ? '—' : value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
             ],
           ),
