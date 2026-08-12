@@ -7,6 +7,7 @@ using UrbanSync.Application.Features.Roles;
 using UrbanSync.Application.Features.Users;
 using UrbanSync.Application.Features.Jurisdiction;
 using UrbanSync.Application.Features.Departament;
+using UrbanSync.Application.Features.Institution;
 
 namespace UrbanSync.Application;
 
@@ -50,6 +51,10 @@ public static class DependencyInjection
         services.AddScoped<
             IDepartmentService,
             DepartmentService>();
+
+        services.AddScoped<
+            IInstitutionService,
+            InstitutionService>();
 
         return services;
     }
