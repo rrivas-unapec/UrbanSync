@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Api.Contracts.Jurisdiction;
+using UrbanSync.Application.Features.Jurisdiction;
 
 namespace UrbanSync.Api.Controllers
 {
