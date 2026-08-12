@@ -64,6 +64,10 @@ public static class DependencyInjection
             InstitutionRepository>();
 
         services.AddScoped<
+            IEvidenceRepository,
+            EvidenceRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 
