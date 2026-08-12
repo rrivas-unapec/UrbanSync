@@ -80,6 +80,10 @@ public static class DependencyInjection
             JobRepository>();
 
         services.AddScoped<
+            IClaimRepository,
+            ClaimRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 
