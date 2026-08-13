@@ -102,7 +102,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           _HomeTab(
             icon: Icons.support_agent_outlined,
-            label: 'Reclamaciones',
+            label: 'Reclamos',
             title: 'Mis reclamaciones',
             body: ClaimsPage(showAppBar: false),
           ),
@@ -201,7 +201,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           _HomeTab(
             icon: Icons.support_agent_outlined,
-            label: 'Reclamaciones',
+            label: 'Reclamos',
             title: 'Reclamaciones',
             body: ClaimsPage(showAppBar: false),
           ),
