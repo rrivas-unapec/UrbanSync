@@ -397,6 +397,8 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
     );
   }
 
+  /// El activo aporta la jurisdicción, que el API exige al crear la incidencia
+  /// y que no puede resolverse por coordenadas.
   void _selectAsset(UrbanAsset? asset) {
     setState(() {
       _activo = asset;
