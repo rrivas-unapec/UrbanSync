@@ -6,7 +6,7 @@ using UrbanSync.Web.Services;
 
 namespace UrbanSync.Web.Controllers;
 
-[Authorize(Roles = "Administrador,SupervisorOperaciones")]
+[Authorize(Roles = "Administrador,SupervisorOperaciones,GestorUbicacion")]
 public sealed class JurisdictionsController : Controller
 {
     private readonly IJurisdictionsPageService _jurisdictionsPageService;
@@ -32,6 +32,7 @@ public sealed class JurisdictionsController : Controller
         return View(model);
     }
 
+    [Authorize(Roles = "Administrador,SupervisorOperaciones")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(

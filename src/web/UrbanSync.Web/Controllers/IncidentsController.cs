@@ -56,20 +56,21 @@ public sealed class IncidentsController : Controller
         string? status,
         CancellationToken cancellationToken)
     {
-        var canManage =
+        var seesAllIncidents =
             User.IsInRole("Administrador") ||
             User.IsInRole("SupervisorOperaciones") ||
-            User.IsInRole("AnalistaTecnico");
+            User.IsInRole("AnalistaTecnico") ||
+            User.IsInRole("GestorUbicacion");
 
         ViewBag.Status = status;
-        ViewBag.MineOnly = !canManage;
+        ViewBag.MineOnly = !seesAllIncidents;
 
         try
         {
             var incidents =
                 await _incidentsApiClient.GetAllAsync(
                     status,
-                    mine: !canManage,
+                    mine: !seesAllIncidents,
                     cancellationToken);
 
             return View(incidents);

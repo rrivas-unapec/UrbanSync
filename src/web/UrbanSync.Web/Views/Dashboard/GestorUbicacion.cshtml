@@ -1,0 +1,83 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Panel de Gestor de Ubicación";
+}
+
+<div class="mb-4">
+    <span class="badge bg-info text-dark mb-2">Gestor de Ubicación</span>
+    <h1 class="fw-bold mb-1">Gestión territorial</h1>
+    <p class="text-muted mb-0">Incidencias, mapa, jurisdicciones y departamentos.</p>
+</div>
+
+<div class="alert alert-warning">
+    <strong>Limitación conocida:</strong> este panel todavía muestra <strong>todas</strong> las jurisdicciones e incidencias,
+    no solo las de tu zona asignada. <code>dbo.Usuarios</code> no tiene ningún vínculo con <code>dbo.Jurisdicciones</code>
+    hoy, así que no hay forma de calcular "tu jurisdicción" sin una migración de esquema — pendiente de una decisión de negocio.
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-exclamation-triangle fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Incidencias</h5>
+                <p class="text-muted">Consulta el detalle y estado de las incidencias registradas.</p>
+                <a asp-controller="Incidents" asp-action="Index" class="btn btn-outline-dark">
+                    Ver incidencias
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-map fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Mapa</h5>
+                <p class="text-muted">Ubicación geográfica de las incidencias.</p>
+                <a asp-controller="Dashboard" asp-action="Mapa" class="btn btn-outline-dark">
+                    Ver mapa
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-diagram-3 fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Jurisdicciones</h5>
+                <p class="text-muted">Consulta las divisiones territoriales registradas.</p>
+                <a asp-controller="Jurisdictions" asp-action="Index" class="btn btn-outline-dark">
+                    Ver jurisdicciones
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-diagram-2 fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Departamentos</h5>
+                <p class="text-muted">Consulta los departamentos registrados.</p>
+                <a asp-controller="Departments" asp-action="Index" class="btn btn-outline-dark">
+                    Ver departamentos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-signpost-split fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Activos urbanos</h5>
+                <p class="text-muted">Consulta el historial de incidencias por activo.</p>
+                <a asp-controller="Assets" asp-action="Index" class="btn btn-outline-dark">
+                    Ver activos
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

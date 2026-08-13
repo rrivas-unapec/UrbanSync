@@ -6,7 +6,7 @@ using UrbanSync.Web.Services;
 
 namespace UrbanSync.Web.Controllers;
 
-[Authorize(Roles = "Administrador,SupervisorOperaciones,AnalistaTecnico")]
+[Authorize(Roles = "Administrador,SupervisorOperaciones,AnalistaTecnico,GestorUbicacion")]
 public sealed class AssetsController : Controller
 {
     private readonly IAssetsPageService _assetsPageService;

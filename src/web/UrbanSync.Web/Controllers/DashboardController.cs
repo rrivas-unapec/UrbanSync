@@ -77,6 +77,11 @@ public sealed class DashboardController : Controller
             return View("Tecnico", indicators);
         }
 
+        if (User.IsInRole("GestorUbicacion"))
+        {
+            return View("GestorUbicacion");
+        }
+
         if (User.IsInRole("Ciudadano"))
         {
             return View("Ciudadano");
@@ -85,7 +90,7 @@ public sealed class DashboardController : Controller
         return View("SinPanel");
     }
 
-    [Authorize(Roles = "Administrador,SupervisorOperaciones")]
+    [Authorize(Roles = "Administrador,SupervisorOperaciones,GestorUbicacion")]
     public async Task<IActionResult> Mapa(
         CancellationToken cancellationToken)
     {
