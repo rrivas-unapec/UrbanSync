@@ -1,0 +1,90 @@
+@model ReportIncidentPageViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Reportar incidencia";
+}
+
+<div class="mb-4">
+    <a asp-action="Index" class="text-decoration-none small">
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver a mis incidencias
+    </a>
+
+    <h1 class="fw-bold mt-2 mb-1">Reportar incidencia</h1>
+    <p class="text-muted mb-0">Cuéntanos qué problema urbano encontraste.</p>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4" style="max-width: 720px;">
+    <div class="card-body p-4">
+
+        @if (Model.TiposIncidencia.Count == 0 || Model.Ubicaciones.Count == 0)
+        {
+            <p class="text-muted mb-0">
+                Todavía no hay suficiente información base (tipos de incidencia o ubicaciones)
+                registrada en el sistema para poder reportar. Contacta a un administrador.
+            </p>
+        }
+        else
+        {
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Tipo de incidencia</label>
+                    <select name="tipoIncidenciaId" class="form-select" required>
+                        <option value="">— Selecciona —</option>
+                        @foreach (var tipo in Model.TiposIncidencia)
+                        {
+                            <option value="@tipo.Id">@tipo.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ubicación</label>
+                    <select name="ubicacionId" class="form-select" required>
+                        <option value="">— Selecciona —</option>
+                        @foreach (var ubicacion in Model.Ubicaciones)
+                        {
+                            <option value="@ubicacion.Id">@ubicacion.Address (@ubicacion.JurisdictionName)</option>
+                        }
+                    </select>
+                    <div class="form-text">
+                        ¿No encuentras la dirección exacta? Elige la más cercana disponible.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Prioridad</label>
+                    <select name="prioridad" class="form-select" required>
+                        <option value="Baja">Baja</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Critica">Crítica</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="4" minlength="10" maxlength="1000" required></textarea>
+                    <div class="form-text">Entre 10 y 1000 caracteres.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Reportar incidencia
+                </button>
+            </form>
+        }
+
+    </div>
+</div>

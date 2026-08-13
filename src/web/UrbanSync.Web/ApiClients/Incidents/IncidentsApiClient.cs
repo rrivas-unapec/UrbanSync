@@ -54,6 +54,16 @@ public sealed class IncidentsApiClient
             cancellationToken);
     }
 
+    public Task<IncidentResponse?> CreateAsync(
+        CreateIncidentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PostAsync<CreateIncidentRequest, IncidentResponse>(
+            "api/incidents",
+            request,
+            cancellationToken);
+    }
+
     public Task<IncidentResponse?> UpdateStatusAsync(
         int id,
         UpdateIncidentStatusRequest request,

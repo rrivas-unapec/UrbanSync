@@ -1,9 +1,6 @@
 @model IncidentDetailsViewModel
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Detalle de incidencia";
-
     var incident = Model.Incident;
 
     var canManage =
@@ -14,6 +11,9 @@
     var canViewAudit =
         User.IsInRole("Administrador") ||
         User.IsInRole("SupervisorOperaciones");
+
+    Layout = canManage ? "_AdminLayout" : "_Layout";
+    ViewData["Title"] = "Detalle de incidencia";
 }
 
 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">

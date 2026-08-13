@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UrbanSync.Web.ApiClients.Common;
 using UrbanSync.Web.ApiClients.Evidence;
+using UrbanSync.Web.ApiClients.IncidentTypes;
 using UrbanSync.Web.ApiClients.Incidents;
+using UrbanSync.Web.ApiClients.Locations;
 using UrbanSync.Web.ApiClients.TechnicalAnalysis;
 using UrbanSync.Web.ViewModels;
 
@@ -24,6 +26,12 @@ public sealed class IncidentsController : Controller
     private readonly ITechnicalAnalysisApiClient
         _technicalAnalysisApiClient;
 
+    private readonly IIncidentTypesApiClient
+        _incidentTypesApiClient;
+
+    private readonly ILocationsApiClient
+        _locationsApiClient;
+
     private readonly ILogger<IncidentsController>
         _logger;
 
@@ -31,11 +39,15 @@ public sealed class IncidentsController : Controller
         IIncidentsApiClient incidentsApiClient,
         IEvidenceApiClient evidenceApiClient,
         ITechnicalAnalysisApiClient technicalAnalysisApiClient,
+        IIncidentTypesApiClient incidentTypesApiClient,
+        ILocationsApiClient locationsApiClient,
         ILogger<IncidentsController> logger)
     {
         _incidentsApiClient = incidentsApiClient;
         _evidenceApiClient = evidenceApiClient;
         _technicalAnalysisApiClient = technicalAnalysisApiClient;
+        _incidentTypesApiClient = incidentTypesApiClient;
+        _locationsApiClient = locationsApiClient;
         _logger = logger;
     }
 
@@ -73,6 +85,136 @@ public sealed class IncidentsController : Controller
             return View(
                 Array.Empty<IncidentResponse>());
         }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Create(
+        CancellationToken cancellationToken)
+    {
+        var model = await BuildReportIncidentPageAsync(
+            cancellationToken);
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(
+        int tipoIncidenciaId,
+        int ubicacionId,
+        string prioridad,
+        string descripcion,
+        CancellationToken cancellationToken)
+    {
+        if (tipoIncidenciaId <= 0 ||
+            ubicacionId <= 0 ||
+            string.IsNullOrWhiteSpace(prioridad) ||
+            string.IsNullOrWhiteSpace(descripcion))
+        {
+            ModelState.AddModelError(
+                string.Empty,
+                "Todos los campos son obligatorios.");
+
+            var model = await BuildReportIncidentPageAsync(
+                cancellationToken);
+
+            return View(model);
+        }
+
+        try
+        {
+            var ubicaciones = await _locationsApiClient.GetAllAsync(
+                cancellationToken);
+
+            var ubicacion = ubicaciones.FirstOrDefault(
+                location => location.Id == ubicacionId);
+
+            if (ubicacion is null)
+            {
+                ModelState.AddModelError(
+                    string.Empty,
+                    "La ubicación seleccionada ya no está disponible.");
+
+                var model = await BuildReportIncidentPageAsync(
+                    cancellationToken);
+
+                return View(model);
+            }
+
+            var created = await _incidentsApiClient.CreateAsync(
+                new CreateIncidentRequest
+                {
+                    TipoIncidenciaId = tipoIncidenciaId,
+                    Descripcion = descripcion,
+                    Prioridad = prioridad,
+                    Ubicacion = new IncidentLocationRequest
+                    {
+                        Direccion = ubicacion.Address,
+                        Referencia = ubicacion.Reference,
+                        Lat = ubicacion.Latitude,
+                        Lng = ubicacion.Longitude,
+                        JurisdiccionId = ubicacion.JurisdictionId
+                    }
+                },
+                cancellationToken);
+
+            TempData["IncidentSuccess"] =
+                "Tu incidencia fue reportada correctamente.";
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = created!.Id });
+        }
+        catch (UrbanSyncApiException exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "La API rechazó el reporte de la incidencia.");
+
+            ModelState.AddModelError(
+                string.Empty,
+                exception.Message);
+
+            var model = await BuildReportIncidentPageAsync(
+                cancellationToken);
+
+            return View(model);
+        }
+    }
+
+    private async Task<ReportIncidentPageViewModel>
+        BuildReportIncidentPageAsync(
+            CancellationToken cancellationToken)
+    {
+        var typesTask = _incidentTypesApiClient.GetAllAsync(
+            cancellationToken);
+
+        var locationsTask = _locationsApiClient.GetAllAsync(
+            cancellationToken);
+
+        await Task.WhenAll(typesTask, locationsTask);
+
+        return new ReportIncidentPageViewModel
+        {
+            TiposIncidencia = typesTask.Result
+                .Where(type => type.IsActive)
+                .OrderBy(type => type.Name)
+                .Select(type => new IncidentTypeOptionViewModel
+                {
+                    Id = type.Id,
+                    Name = type.Name
+                })
+                .ToList(),
+            Ubicaciones = locationsTask.Result
+                .OrderBy(location => location.Address)
+                .Select(location => new LocationOptionViewModel
+                {
+                    Id = location.Id,
+                    Address = location.Address,
+                    JurisdictionName = location.JurisdictionName
+                })
+                .ToList()
+        };
     }
 
     [HttpGet]

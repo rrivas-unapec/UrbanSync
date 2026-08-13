@@ -1,0 +1,80 @@
+@model MyClaimsViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Mis reclamaciones";
+    var total = Model.Reclamaciones.Count;
+}
+
+<div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">Mis reclamaciones</h1>
+        <p class="text-muted mb-0">
+            @if (Model.DatosDisponibles)
+            {
+                @($"{total} reclamaci{(total == 1 ? "ón" : "ones")} registrada{(total == 1 ? "" : "s")}")
+            }
+        </p>
+    </div>
+
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>
+        Crear reclamación
+    </a>
+</div>
+
+@if (TempData["MyClaimsSuccess"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else if (total == 0)
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+            <h2 class="h5 fw-bold">No tienes reclamaciones</h2>
+            <p class="text-muted mb-0">Usa el botón "Crear reclamación" para registrar una.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-3">
+        @foreach (var item in Model.Reclamaciones)
+        {
+            var estilo = EstadoEstilo(item.Status);
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                        <span class="badge rounded-pill" style="background-color:@estilo.Bg; color:@estilo.Fg;">@item.Status</span>
+                        <span class="badge bg-light text-dark">@item.Category</span>
+                        <span class="text-muted small">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <p class="fw-bold mb-0">@item.Title</p>
+                    <p class="text-muted small mb-1">@item.Description</p>
+                    <p class="text-muted small mb-0">@item.LocationAddress</p>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    (string Bg, string Fg) EstadoEstilo(string estado) => estado switch
+    {
+        "Resuelta" => ("rgba(0,166,118,.12)", "#00A676"),
+        "Rechazada" => ("rgba(228,87,46,.12)", "#E4572E"),
+        "EnRevision" => ("rgba(224,122,0,.12)", "#E07A00"),
+        _ => ("rgba(0,87,184,.12)", "#0057B8")
+    };
+}

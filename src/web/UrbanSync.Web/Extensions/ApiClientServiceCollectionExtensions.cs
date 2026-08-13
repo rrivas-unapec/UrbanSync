@@ -4,6 +4,7 @@ using UrbanSync.Web.ApiClients.Authentication;
 using UrbanSync.Web.ApiClients.Claims;
 using UrbanSync.Web.ApiClients.Departments;
 using UrbanSync.Web.ApiClients.Evidence;
+using UrbanSync.Web.ApiClients.IncidentTypes;
 using UrbanSync.Web.ApiClients.Incidents;
 using UrbanSync.Web.ApiClients.Institutions;
 using UrbanSync.Web.ApiClients.Jurisdictions;
@@ -104,6 +105,11 @@ public static class ApiClientServiceCollectionExtensions
         services.AddUrbanSyncHttpClient<
             IAssetsApiClient,
             AssetsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IIncidentTypesApiClient,
+            IncidentTypesApiClient>(
                 normalizedBaseUrl);
 
         return services;

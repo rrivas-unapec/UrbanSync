@@ -47,19 +47,22 @@ public sealed class DashboardController : Controller
             return View("Administrador", model);
         }
 
-        if (User.IsInRole("Supervisor") ||
-            User.IsInRole("SupervisorOperaciones"))
+        if (User.IsInRole("SupervisorOperaciones"))
         {
             return View("Supervisor");
         }
 
-        if (User.IsInRole("Tecnico") ||
-            User.IsInRole("AnalistaTecnico"))
+        if (User.IsInRole("AnalistaTecnico"))
         {
             return View("Tecnico");
         }
 
-        return View("Ciudadano");
+        if (User.IsInRole("Ciudadano"))
+        {
+            return View("Ciudadano");
+        }
+
+        return View("SinPanel");
     }
 
     [Authorize(Roles = "Administrador")]
