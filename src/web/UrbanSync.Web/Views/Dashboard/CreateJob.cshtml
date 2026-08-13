@@ -1,0 +1,80 @@
+@model CreateJobPageViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Crear trabajo";
+}
+
+<div class="mb-4">
+    <a asp-action="ActivosOrdenes" class="text-decoration-none small">
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver a trabajos
+    </a>
+
+    <h1 class="fw-bold mt-2 mb-1">Crear trabajo</h1>
+    <p class="text-muted mb-0">Asigna un trabajo a un técnico para atender una incidencia.</p>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div>@error.ErrorMessage</div>
+        }
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4" style="max-width: 720px;">
+    <div class="card-body p-4">
+
+        @if (Model.Incidencias.Count == 0 || Model.Usuarios.Count == 0)
+        {
+            <p class="text-muted mb-0">
+                Necesitas al menos una incidencia registrada y un usuario activo para crear un trabajo.
+            </p>
+        }
+        else
+        {
+            <form asp-action="CreateJob" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Incidencia</label>
+                    <select name="incidentId" class="form-select" required>
+                        <option value="">— Selecciona —</option>
+                        @foreach (var incidencia in Model.Incidencias)
+                        {
+                            <option value="@incidencia.Id">@incidencia.CodigoCaso — @incidencia.TipoIncidencia</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Técnico asignado</label>
+                    <select name="assignedUserId" class="form-select" required>
+                        <option value="">— Selecciona —</option>
+                        @foreach (var usuario in Model.Usuarios)
+                        {
+                            <option value="@usuario.Id">@usuario.NombreCompleto</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Descripción del trabajo</label>
+                    <textarea name="jobDescription" class="form-control" rows="3" maxlength="1000" required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Fecha de inicio (opcional)</label>
+                    <input type="date" name="startDate" class="form-control" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    Crear trabajo
+                </button>
+            </form>
+        }
+
+    </div>
+</div>

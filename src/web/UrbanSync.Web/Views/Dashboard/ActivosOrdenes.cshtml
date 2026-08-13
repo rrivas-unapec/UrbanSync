@@ -2,121 +2,130 @@
 @{
     Layout = "_AdminLayout";
 }
-<div class="mb-4">
-    <h1 class="fw-bold mb-1">Activos y Órdenes de Trabajo</h1>
-    <p class="text-muted mb-0">Gestión de inventario y seguimiento de intervenciones.</p>
-</div>
-
-<ul class="nav nav-tabs mb-3" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-ordenes" type="button" role="tab">
-            Órdenes de Trabajo
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-activos" type="button" role="tab">
-            Activos Urbanos
-        </button>
-    </li>
-</ul>
-
-<div class="tab-content">
-    <div class="tab-pane fade show active" id="tab-ordenes" role="tabpanel">
-        @if (!Model.DatosDisponibles)
-        {
-            <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
-                    <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
-                    <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
-                </div>
-            </div>
-        }
-        else if (Model.Ordenes.Count == 0)
-        {
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-clipboard-check fs-1 text-muted mb-3 d-block"></i>
-                    <h3 class="fw-bold fs-5 mb-1">No hay órdenes de trabajo</h3>
-                    <p class="text-muted mb-0">Todavía no se han creado órdenes de trabajo en el sistema.</p>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <input type="text" id="workOrdersSearch" class="form-control admin-table-search" style="max-width:20rem;" placeholder="Buscar por código, técnico o descripción..." />
-                        <span class="text-muted small" id="workOrdersSummary"></span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="workOrdersTable">
-                            <thead>
-                                <tr>
-                                    <th data-sort="codigo">Código <span class="sort-icon">↕</span></th>
-                                    <th data-sort="descripcion">Descripción <span class="sort-icon">↕</span></th>
-                                    <th data-sort="tecnico">Técnico asignado <span class="sort-icon">↕</span></th>
-                                    <th data-sort="estado">Estado <span class="sort-icon">↕</span></th>
-                                    <th data-sort="inicio">Inicio <span class="sort-icon">↕</span></th>
-                                    <th data-sort="fin">Fin <span class="sort-icon">↕</span></th>
-                                    <th>Resultado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var orden in Model.Ordenes)
-                                {
-                                    var busqueda = $"{orden.CodigoCaso} {orden.DescripcionTrabajo} {orden.UsuarioAsignado}".ToLowerInvariant();
-                                    <tr data-search="@busqueda"
-                                        data-codigo="@orden.CodigoCaso"
-                                        data-descripcion="@orden.DescripcionTrabajo"
-                                        data-tecnico="@orden.UsuarioAsignado"
-                                        data-estado="@orden.Estado"
-                                        data-inicio="@(orden.FechaInicio?.ToString("yyyy-MM-dd") ?? "")"
-                                        data-fin="@(orden.FechaFin?.ToString("yyyy-MM-dd") ?? "")">
-                                        <td class="font-monospace small fw-bold" style="color:#0057B8;">@orden.CodigoCaso</td>
-                                        <td>@orden.DescripcionTrabajo</td>
-                                        <td>@(string.IsNullOrWhiteSpace(orden.UsuarioAsignado) ? "—" : orden.UsuarioAsignado)</td>
-                                        <td>
-                                            @{
-                                                var badgeClass = orden.Estado switch
-                                                {
-                                                    "EnProgreso" => "bg-primary",
-                                                    "Finalizado" => "bg-success",
-                                                    _ => "bg-secondary"
-                                                };
-                                            }
-                                            <span class="badge @badgeClass">@orden.Estado</span>
-                                        </td>
-                                        <td>@(orden.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</td>
-                                        <td>@(orden.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</td>
-                                        <td class="text-muted small">@(string.IsNullOrWhiteSpace(orden.Resultado) ? "—" : orden.Resultado)</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-1" id="workOrdersPagination"></div>
-                </div>
-            </div>
-        }
+<div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">Órdenes de Trabajo</h1>
+        <p class="text-muted mb-0">Asignación y seguimiento de intervenciones técnicas.</p>
     </div>
 
-    <div class="tab-pane fade" id="tab-activos" role="tabpanel">
-        <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
-            <div class="card-body text-center py-5">
-                <i class="bi bi-box-seam fs-1 text-muted mb-3 d-block"></i>
-                <h3 class="fw-bold fs-5 mb-1 text-muted">Pendiente</h3>
-                <p class="text-muted mb-0">
-                    "Activos Urbanos" todavía no existe como entidad en el dominio.
-                    Queda pendiente de definir con el equipo cómo modelarla.
-                </p>
-            </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Assets" asp-action="Index" class="btn btn-outline-dark">
+            <i class="bi bi-signpost-split me-1"></i>
+            Activos urbanos
+        </a>
+        <a asp-action="CreateJob" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>
+            Crear trabajo
+        </a>
+    </div>
+</div>
+
+@if (TempData["ActivosOrdenesSuccess"] is string successMsg)
+{
+    <div class="alert alert-success">@successMsg</div>
+}
+
+@if (TempData["ActivosOrdenesError"] is string errorMsg)
+{
+    <div class="alert alert-danger">@errorMsg</div>
+}
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
         </div>
     </div>
-</div>
+}
+else if (Model.Ordenes.Count == 0)
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-clipboard-check fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1">No hay órdenes de trabajo</h3>
+            <p class="text-muted mb-0">Todavía no se han creado órdenes de trabajo en el sistema.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <input type="text" id="workOrdersSearch" class="form-control admin-table-search" style="max-width:20rem;" placeholder="Buscar por código, técnico o descripción..." />
+                <span class="text-muted small" id="workOrdersSummary"></span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="workOrdersTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="codigo">Código <span class="sort-icon">↕</span></th>
+                            <th data-sort="descripcion">Descripción <span class="sort-icon">↕</span></th>
+                            <th data-sort="tecnico">Técnico asignado <span class="sort-icon">↕</span></th>
+                            <th data-sort="estado">Estado <span class="sort-icon">↕</span></th>
+                            <th data-sort="inicio">Inicio <span class="sort-icon">↕</span></th>
+                            <th data-sort="fin">Fin <span class="sort-icon">↕</span></th>
+                            <th>Resultado</th>
+                            <th>Actualizar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var orden in Model.Ordenes)
+                        {
+                            var busqueda = $"{orden.CodigoCaso} {orden.DescripcionTrabajo} {orden.UsuarioAsignado}".ToLowerInvariant();
+                            <tr data-search="@busqueda"
+                                data-codigo="@orden.CodigoCaso"
+                                data-descripcion="@orden.DescripcionTrabajo"
+                                data-tecnico="@orden.UsuarioAsignado"
+                                data-estado="@orden.Estado"
+                                data-inicio="@(orden.FechaInicio?.ToString("yyyy-MM-dd") ?? "")"
+                                data-fin="@(orden.FechaFin?.ToString("yyyy-MM-dd") ?? "")">
+                                <td class="font-monospace small fw-bold" style="color:#0057B8;">@orden.CodigoCaso</td>
+                                <td>@orden.DescripcionTrabajo</td>
+                                <td>@(string.IsNullOrWhiteSpace(orden.UsuarioAsignado) ? "—" : orden.UsuarioAsignado)</td>
+                                <td>
+                                    @{
+                                        var badgeClass = orden.Estado switch
+                                        {
+                                            "EnProgreso" => "bg-primary",
+                                            "Finalizado" => "bg-success",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @badgeClass">@orden.Estado</span>
+                                </td>
+                                <td>@(orden.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td>@(orden.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</td>
+                                <td class="text-muted small">@(string.IsNullOrWhiteSpace(orden.Resultado) ? "—" : orden.Resultado)</td>
+                                <td style="min-width:11rem;">
+                                    <form asp-action="UpdateJobStatus" method="post" class="d-flex gap-1">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@orden.Id" />
+                                        <select name="estado" class="form-select form-select-sm">
+                                            <option value="Pendiente" selected="@(orden.Estado == "Pendiente")">Pendiente</option>
+                                            <option value="EnProgreso" selected="@(orden.Estado == "EnProgreso")">En progreso</option>
+                                            <option value="Finalizado" selected="@(orden.Estado == "Finalizado")">Finalizado</option>
+                                            <option value="Cancelado" selected="@(orden.Estado == "Cancelado")">Cancelado</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-dark">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-end gap-1" id="workOrdersPagination"></div>
+        </div>
+    </div>
+}
 
 @section Scripts {
     <script src="~/js/admin-work-orders.js" asp-append-version="true"></script>
