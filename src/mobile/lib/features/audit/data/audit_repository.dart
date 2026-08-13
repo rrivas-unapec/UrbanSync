@@ -39,8 +39,6 @@ class AuditRepository {
     }
   }
 
-  /// El API filtra por `entidad` pero no por `entidadId`, así que la selección
-  /// por incidencia se completa en el cliente.
   Future<List<AuditEntry>> forIncident(int incidentId) async {
     final entries = await list(const AuditFilter(entidad: entidadIncidencias));
     return entries.where((e) => e.entidadId == incidentId).toList();

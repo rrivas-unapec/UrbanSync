@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -17,9 +16,20 @@ import '../../audit/presentation/audit_providers.dart';
 import '../../audit/presentation/incident_audit_section.dart';
 import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_controller.dart';
+import '../data/incident_work_repository.dart';
 import '../data/incidents_repository.dart';
 import '../domain/incident.dart';
+import 'incident_work_providers.dart';
 import 'incidents_providers.dart';
+import 'widgets/incident_work_sections.dart';
+
+class _DetailTab {
+  const _DetailTab(this.label, this.icon, this.body);
+
+  final String label;
+  final IconData icon;
+  final Widget body;
+}
 
 class IncidentDetailPage extends ConsumerStatefulWidget {
   const IncidentDetailPage({super.key, required this.incidentId});
@@ -67,6 +77,9 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
     );
     if (tipo == null) return;
 
+    final userId = ref.read(authControllerProvider).user?.id;
+    if (userId == null) return;
+
     final picked = await ImagePicker().pickImage(
       source: ImageSource.camera,
       imageQuality: 70,
@@ -75,32 +88,17 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
     if (picked == null || !mounted) return;
 
     setState(() => _busy = true);
-    double? lat;
-    double? lng;
-    try {
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      lat = position.latitude;
-      lng = position.longitude;
-    } catch (_) {
-      // GPS es best-effort.
-    }
-
     try {
       await ref
-          .read(incidentsRepositoryProvider)
-          .uploadEvidence(
-            widget.incidentId,
-            filePath: picked.path,
-            tipo: tipo,
-            lat: lat,
-            lng: lng,
+          .read(incidentWorkRepositoryProvider)
+          .createEvidence(
+            incidenciaId: widget.incidentId,
+            tipoEvidencia: tipo,
+            rutaArchivo: picked.path,
+            usuarioSubeId: userId,
           );
       _refresh();
-      _toast('Evidencia subida.', AppColors.secondary);
+      _toast('Evidencia registrada.', AppColors.secondary);
     } on ApiException catch (error) {
       _toast(error.message, AppColors.destructive);
     } finally {
@@ -111,6 +109,10 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
   void _refresh() {
     ref.invalidate(incidentDetailProvider(widget.incidentId));
     ref.invalidate(incidentAuditProvider(widget.incidentId));
+    ref.invalidate(incidentEvidencesProvider(widget.incidentId));
+    ref.invalidate(incidentAnalysisProvider(widget.incidentId));
+    ref.invalidate(incidentJobsProvider(widget.incidentId));
+    ref.invalidate(incidentReportsProvider(widget.incidentId));
   }
 
   void _toast(String message, Color color) {
@@ -124,7 +126,6 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
   Widget build(BuildContext context) {
     final async = ref.watch(incidentDetailProvider(widget.incidentId));
     final user = ref.watch(authControllerProvider).user;
-    final puedeAuditar = user?.isManager ?? false;
 
     final body = async.when(
       loading: () => const LoadingView(),
@@ -137,7 +138,9 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
       data: (incident) => _content(incident, user),
     );
 
-    if (!puedeAuditar) {
+    final tabs = _tabsFor(user, body);
+
+    if (tabs.length == 1) {
       return Scaffold(
         appBar: AppBar(title: const Text('Detalle de incidencia')),
         body: body,
@@ -148,28 +151,71 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Detalle de incidencia'),
-          bottom: const TabBar(
+          bottom: TabBar(
+            isScrollable: true,
             tabs: [
-              Tab(text: 'Info', icon: Icon(Icons.info_outline, size: 20)),
-              Tab(text: 'Auditoría', icon: Icon(Icons.history, size: 20)),
+              for (final tab in tabs)
+                Tab(text: tab.label, icon: Icon(tab.icon, size: 20)),
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            body,
-            IncidentAuditSection(incidentId: widget.incidentId),
-          ],
-        ),
+        body: TabBarView(children: [for (final tab in tabs) tab.body]),
         bottomNavigationBar: user == null
             ? null
             : _actionBar(async.value, user),
       ),
     );
+  }
+
+  List<_DetailTab> _tabsFor(AppUser? user, Widget info) {
+    final id = widget.incidentId;
+
+    final tabs = <_DetailTab>[
+      _DetailTab('Info', Icons.info_outline, info),
+      _DetailTab(
+        'Evidencias',
+        Icons.photo_library_outlined,
+        IncidentEvidencesSection(incidentId: id),
+      ),
+    ];
+
+    if (user == null) return tabs;
+
+    if (user.isManager || user.isTechnician) {
+      tabs.addAll([
+        _DetailTab(
+          'Análisis',
+          Icons.science_outlined,
+          IncidentAnalysisSection(incidentId: id),
+        ),
+        _DetailTab(
+          'Trabajos',
+          Icons.build_outlined,
+          IncidentJobsSection(incidentId: id),
+        ),
+        _DetailTab(
+          'Reportes',
+          Icons.description_outlined,
+          IncidentReportsSection(incidentId: id),
+        ),
+      ]);
+    }
+
+    if (user.isManager) {
+      tabs.add(
+        _DetailTab(
+          'Auditoría',
+          Icons.history,
+          IncidentAuditSection(incidentId: id),
+        ),
+      );
+    }
+
+    return tabs;
   }
 
   Widget _content(Incident incident, AppUser? user) {
@@ -242,59 +288,8 @@ class _IncidentDetailPageState extends ConsumerState<IncidentDetailPage> {
             const SizedBox(height: 16),
           ],
           _timelineCard(incident),
-          const SizedBox(height: 16),
-          Text('Evidencias', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          _evidences(incident),
           const SizedBox(height: 80),
         ],
-      ),
-    );
-  }
-
-  Widget _evidences(Incident incident) {
-    if (incident.evidencias.isEmpty) {
-      return const EmptyState(
-        title: 'Sin evidencias',
-        message: 'Todavía no se han adjuntado evidencias.',
-        icon: Icons.photo_library_outlined,
-      );
-    }
-
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: incident.evidencias.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final evidence = incident.evidencias[index];
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  evidence.url,
-                  width: 140,
-                  height: 110,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 140,
-                    height: 110,
-                    color: AppColors.muted,
-                    child: const Icon(Icons.insert_drive_file_outlined),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                evidence.tipoEvidencia,
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          );
-        },
       ),
     );
   }

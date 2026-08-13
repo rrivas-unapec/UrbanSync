@@ -13,8 +13,11 @@ import '../../../core/network/api_exception.dart';
 import '../../../shared/utils/validators.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/buttons.dart';
+import '../../auth/presentation/auth_controller.dart';
+import '../data/incident_work_repository.dart';
 import '../data/incidents_repository.dart';
 import '../domain/catalog.dart';
+import '../domain/urban_asset.dart';
 import 'incidents_providers.dart';
 
 const _defaultCenter = LatLng(18.4861, -69.9312);
@@ -34,6 +37,7 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
   final _referenciaController = TextEditingController();
 
   int? _tipoId;
+  UrbanAsset? _activo;
   String _prioridad = 'Media';
   LatLng _point = _defaultCenter;
   Jurisdiction? _jurisdiccion;
@@ -63,7 +67,6 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
           () => _locationNote =
               'Activa la ubicación para autodetectar tu posición.',
         );
-        await _resolveJurisdiction();
         return;
       }
 
@@ -79,7 +82,6 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
           () => _locationNote =
               'Permiso de ubicación denegado. Ajusta el pin manualmente.',
         );
-        await _resolveJurisdiction();
         return;
       }
 
@@ -99,25 +101,12 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
         () => _locationNote =
             'No se pudo obtener la ubicación. Ajusta el pin manualmente.',
       );
-      await _resolveJurisdiction();
     }
   }
 
   void _updatePoint(LatLng point, {bool moveMap = false}) {
     setState(() => _point = point);
     if (moveMap) _mapController.move(point, 16);
-    _resolveJurisdiction();
-  }
-
-  Future<void> _resolveJurisdiction() async {
-    try {
-      final jurisdiction = await ref
-          .read(incidentsRepositoryProvider)
-          .resolveJurisdiction(_point.latitude, _point.longitude);
-      if (mounted) setState(() => _jurisdiccion = jurisdiction);
-    } catch (_) {
-      // La jurisdicción se corrige en triage si no se puede resolver.
-    }
   }
 
   Future<void> _pickPhoto() async {
@@ -174,17 +163,21 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
             ? null
             : _referenciaController.text.trim(),
         jurisdiccionId: _jurisdiccion?.id,
+        activoId: _activo?.id,
       );
 
-      if (_photoPath != null) {
-        await repo.uploadEvidence(
-          incident.id,
-          filePath: _photoPath!,
-          tipo: 'Foto',
-          lat: _point.latitude,
-          lng: _point.longitude,
-          descripcion: 'Evidencia inicial',
-        );
+      final userId = ref.read(authControllerProvider).user?.id;
+
+      if (_photoPath != null && userId != null) {
+        await ref
+            .read(incidentWorkRepositoryProvider)
+            .createEvidence(
+              incidenciaId: incident.id,
+              tipoEvidencia: 'Foto',
+              rutaArchivo: _photoPath!,
+              usuarioSubeId: userId,
+              descripcion: 'Evidencia inicial',
+            );
       }
 
       ref.invalidate(myIncidentsProvider);
@@ -243,18 +236,22 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
               const SizedBox(height: 16),
               typesAsync.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (error, _) => _typesUnavailable(
+                error: (error, _) => _catalogUnavailable(
                   error is ApiException
                       ? error.message
                       : 'No se pudieron cargar los tipos de incidencia.',
+                  () => ref.invalidate(incidentTypesProvider),
                 ),
                 data: (types) => types.isEmpty
-                    ? _typesUnavailable(
+                    ? _catalogUnavailable(
                         'No hay tipos de incidencia configurados. '
                         'Contacta al administrador.',
+                        () => ref.invalidate(incidentTypesProvider),
                       )
                     : _typeDropdown(types),
               ),
+              const SizedBox(height: 16),
+              _assetField(),
               const SizedBox(height: 16),
               _priorityDropdown(),
               const SizedBox(height: 16),
@@ -362,14 +359,15 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
     );
   }
 
-  Widget _typesUnavailable(String message) {
+  Widget _catalogUnavailable(
+    String message,
+    VoidCallback onRetry, [
+    String label = 'Tipo de incidencia',
+  ]) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tipo de incidencia',
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
+        Text(label, style: Theme.of(context).textTheme.labelLarge),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.all(12),
@@ -391,14 +389,80 @@ class _ReportIncidentPageState extends ConsumerState<ReportIncidentPage> {
               Expanded(
                 child: Text(message, style: const TextStyle(fontSize: 13)),
               ),
-              TextButton(
-                onPressed: () => ref.invalidate(incidentTypesProvider),
-                child: const Text('Reintentar'),
-              ),
+              TextButton(onPressed: onRetry, child: const Text('Reintentar')),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  void _selectAsset(UrbanAsset? asset) {
+    setState(() {
+      _activo = asset;
+      if (asset != null) {
+        _jurisdiccion = Jurisdiction(
+          id: asset.jurisdiccionId,
+          nombre: asset.jurisdiccionNombre,
+          nivel: '',
+        );
+      }
+    });
+  }
+
+  Widget _assetField() {
+    final assetsAsync = ref.watch(assetsProvider);
+
+    return assetsAsync.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (error, _) => _catalogUnavailable(
+        error is ApiException
+            ? error.message
+            : 'No se pudieron cargar los activos.',
+        () => ref.invalidate(assetsProvider),
+        'Activo urbano (opcional)',
+      ),
+      data: (assets) {
+        if (assets.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Activo urbano (opcional)',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 6),
+            DropdownButtonFormField<int>(
+              initialValue: _activo?.id,
+              isExpanded: true,
+              hint: const Text('Selecciona el activo afectado'),
+              items: assets
+                  .map(
+                    (a) => DropdownMenuItem(
+                      value: a.id,
+                      child: Text(a.etiqueta, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => _selectAsset(
+                value == null ? null : assets.firstWhere((a) => a.id == value),
+              ),
+            ),
+            if (_activo != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  '${_activo!.tipo} · ${_activo!.estado}',
+                  style: const TextStyle(
+                    color: AppColors.mutedForeground,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

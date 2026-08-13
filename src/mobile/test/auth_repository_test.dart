@@ -70,7 +70,7 @@ void main() {
       expect(result.user.role, 'Ciudadano');
       expect(
         result.user.roleGroup,
-        RoleGroup.citizen,
+        RoleGroup.ciudadano,
       );
     },
   );

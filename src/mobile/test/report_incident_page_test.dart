@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:urbansync/features/incidents/data/incidents_repository.dart';
 import 'package:urbansync/features/incidents/domain/catalog.dart';
+import 'package:urbansync/features/incidents/domain/urban_asset.dart';
 import 'package:urbansync/features/incidents/presentation/report_incident_page.dart';
 
 class _FakeIncidentsRepository extends IncidentsRepository {
@@ -29,12 +30,7 @@ class _FakeIncidentsRepository extends IncidentsRepository {
   }
 
   @override
-  Future<Jurisdiction> resolveJurisdiction(double lat, double lng) async =>
-      const Jurisdiction(
-        id: 1,
-        nombre: 'Distrito Nacional',
-        nivel: 'Provincia',
-      );
+  Future<List<UrbanAsset>> assets() async => const [];
 }
 
 Future<void> _pumpPage(

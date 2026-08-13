@@ -1,3 +1,5 @@
+import '../../incidents/domain/incident.dart';
+
 class CountItem {
   const CountItem({required this.clave, required this.total});
 
@@ -38,4 +40,34 @@ class ReportSummary {
     porPrioridad: _list(json['porPrioridad']),
     porJurisdiccion: _list(json['porJurisdiccion']),
   );
+
+  static List<CountItem> agrupar(
+    List<Incident> incidencias,
+    String Function(Incident) clave,
+  ) {
+    final conteo = <String, int>{};
+
+    for (final incidencia in incidencias) {
+      final valor = clave(incidencia).trim();
+      if (valor.isEmpty) continue;
+      conteo[valor] = (conteo[valor] ?? 0) + 1;
+    }
+
+    final items = conteo.entries
+        .map((e) => CountItem(clave: e.key, total: e.value))
+        .toList();
+
+    items.sort((a, b) => b.total.compareTo(a.total));
+
+    return items;
+  }
+
+  factory ReportSummary.fromIncidents(List<Incident> incidencias) =>
+      ReportSummary(
+        total: incidencias.length,
+        porEstado: agrupar(incidencias, (i) => i.estado),
+        porTipo: agrupar(incidencias, (i) => i.tipoIncidencia),
+        porPrioridad: agrupar(incidencias, (i) => i.prioridad),
+        porJurisdiccion: agrupar(incidencias, (i) => i.jurisdiccion),
+      );
 }

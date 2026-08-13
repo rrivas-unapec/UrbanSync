@@ -45,6 +45,7 @@ class Incident {
     required this.direccion,
     required this.usuarioReporta,
     required this.fechaReporte,
+    this.activoId,
     this.institucionAsignadaId,
     this.institucionAsignada,
     this.referencia,
@@ -62,6 +63,7 @@ class Incident {
   final String descripcion;
   final int tipoIncidenciaId;
   final String tipoIncidencia;
+  final int? activoId;
   final int jurisdiccionId;
   final String jurisdiccion;
   final String direccion;
@@ -84,6 +86,7 @@ class Incident {
     descripcion: json['descripcion'] as String? ?? '',
     tipoIncidenciaId: json['tipoIncidenciaId'] as int? ?? 0,
     tipoIncidencia: json['tipoIncidencia'] as String? ?? '',
+    activoId: (json['activoId'] as num?)?.toInt(),
     jurisdiccionId: json['jurisdiccionId'] as int? ?? 0,
     jurisdiccion: json['jurisdiccion'] as String? ?? '',
     direccion: json['direccion'] as String? ?? '',

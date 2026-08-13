@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/network/dio_client.dart';
 import '../domain/catalog.dart';
 import '../domain/incident.dart';
+import '../domain/urban_asset.dart';
 
 final incidentsRepositoryProvider = Provider<IncidentsRepository>(
   (ref) => IncidentsRepository(ref.read(dioProvider)),
@@ -51,12 +52,14 @@ class IncidentsRepository {
     required String direccion,
     String? referencia,
     int? jurisdiccionId,
+    int? activoId,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/incidents',
         data: {
           'tipoIncidenciaId': tipoIncidenciaId,
+          'activoId': ?activoId,
           'descripcion': descripcion,
           'prioridad': prioridad,
           'ubicacion': {
@@ -109,53 +112,37 @@ class IncidentsRepository {
     }
   }
 
-  Future<List<Evidence>> listEvidences(int incidentId) async {
+  Future<List<IncidentType>> incidentTypes() async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '/api/incidents/$incidentId/evidences',
-      );
+      final response = await _dio.get<List<dynamic>>('/api/incident-types');
       return response.data!
-          .map((e) => Evidence.fromJson(e as Map<String, dynamic>))
+          .map((e) => IncidentType.fromJson(e as Map<String, dynamic>))
+          .where((type) => type.activo)
           .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
   }
 
-  Future<Evidence> uploadEvidence(
-    int incidentId, {
-    required String filePath,
-    required String tipo,
-    double? lat,
-    double? lng,
-    String? descripcion,
-    void Function(int sent, int total)? onProgress,
-  }) async {
+  Future<List<UrbanAsset>> assets() async {
     try {
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath),
-        'tipo': tipo,
-        if (lat != null) 'lat': lat,
-        if (lng != null) 'lng': lng,
-        if (descripcion != null) 'descripcion': descripcion,
-      });
-
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/incidents/$incidentId/evidences',
-        data: formData,
-        onSendProgress: onProgress,
-      );
-      return Evidence.fromJson(response.data!);
+      final response = await _dio.get<List<dynamic>>('/api/assets');
+      return response.data!
+          .map((e) => UrbanAsset.fromJson(e as Map<String, dynamic>))
+          .where((asset) => asset.activo)
+          .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
   }
 
-  Future<List<IncidentType>> incidentTypes() async {
+  Future<List<AssetHistoryEntry>> assetHistory(int assetId) async {
     try {
-      final response = await _dio.get<List<dynamic>>('/api/incident-types');
+      final response = await _dio.get<List<dynamic>>(
+        '/api/assets/$assetId/history',
+      );
       return response.data!
-          .map((e) => IncidentType.fromJson(e as Map<String, dynamic>))
+          .map((e) => AssetHistoryEntry.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
@@ -168,18 +155,6 @@ class IncidentsRepository {
       return response.data!
           .map((e) => Jurisdiction.fromJson(e as Map<String, dynamic>))
           .toList();
-    } on DioException catch (error) {
-      throw ApiException.fromDio(error);
-    }
-  }
-
-  Future<Jurisdiction> resolveJurisdiction(double lat, double lng) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/jurisdictions/resolve',
-        queryParameters: {'lat': lat, 'lng': lng},
-      );
-      return Jurisdiction.fromJson(response.data!);
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
