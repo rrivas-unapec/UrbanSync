@@ -85,6 +85,31 @@ public abstract class ApiClientBase
     }
 
     protected async Task<TResponse?>
+        PutAsync<TRequest, TResponse>(
+            string uri,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        using var response =
+            await SendAsync(
+                () => _httpClient.PutAsJsonAsync(
+                    uri,
+                    request,
+                    JsonOptions,
+                    cancellationToken),
+                cancellationToken);
+
+        await EnsureSuccessAsync(
+            response,
+            cancellationToken);
+
+        return await response.Content
+            .ReadFromJsonAsync<TResponse>(
+                JsonOptions,
+                cancellationToken);
+    }
+
+    protected async Task<TResponse?>
         PatchAsync<TRequest, TResponse>(
             string uri,
             TRequest request,

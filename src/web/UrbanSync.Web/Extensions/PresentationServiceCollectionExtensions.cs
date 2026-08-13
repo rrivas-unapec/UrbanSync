@@ -1,3 +1,4 @@
+using UrbanSync.Web.Presentation.Claims;
 using UrbanSync.Web.Presentation.Dashboard;
 using UrbanSync.Web.Presentation.Users;
 using UrbanSync.Web.Services;
@@ -18,6 +19,10 @@ public static class PresentationServiceCollectionExtensions
         services.AddScoped<
             IUserManagementPageService,
             UserManagementPageService>();
+
+        services.AddScoped<
+            IClaimsPageService,
+            ClaimsPageService>();
 
         return services;
     }

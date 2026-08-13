@@ -1,5 +1,6 @@
 using UrbanSync.Web.ApiClients.Activity;
 using UrbanSync.Web.ApiClients.Authentication;
+using UrbanSync.Web.ApiClients.Claims;
 using UrbanSync.Web.ApiClients.Incidents;
 using UrbanSync.Web.ApiClients.Roles;
 using UrbanSync.Web.ApiClients.Users;
@@ -56,6 +57,11 @@ public static class ApiClientServiceCollectionExtensions
         services.AddUrbanSyncHttpClient<
             IWorkOrdersApiClient,
             WorkOrdersApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IClaimsApiClient,
+            ClaimsApiClient>(
                 normalizedBaseUrl);
 
         return services;

@@ -229,6 +229,22 @@
 
                 </a>
 
+                <a
+                    asp-controller="Claims"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Claims"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-chat-left-dots"></i>
+
+                    <span class="admin-nav-label">
+                        Reclamaciones
+                    </span>
+
+                </a>
+
                 @if (canViewAudit)
                 {
                     <a
