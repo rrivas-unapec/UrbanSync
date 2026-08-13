@@ -1,8 +1,12 @@
 using UrbanSync.Web.ApiClients.Activity;
 using UrbanSync.Web.ApiClients.Authentication;
 using UrbanSync.Web.ApiClients.Claims;
+using UrbanSync.Web.ApiClients.Departments;
 using UrbanSync.Web.ApiClients.Evidence;
 using UrbanSync.Web.ApiClients.Incidents;
+using UrbanSync.Web.ApiClients.Institutions;
+using UrbanSync.Web.ApiClients.Jurisdictions;
+using UrbanSync.Web.ApiClients.Locations;
 using UrbanSync.Web.ApiClients.Roles;
 using UrbanSync.Web.ApiClients.TechnicalAnalysis;
 using UrbanSync.Web.ApiClients.Users;
@@ -74,6 +78,26 @@ public static class ApiClientServiceCollectionExtensions
         services.AddUrbanSyncHttpClient<
             ITechnicalAnalysisApiClient,
             TechnicalAnalysisApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IJurisdictionsApiClient,
+            JurisdictionsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IDepartmentsApiClient,
+            DepartmentsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IInstitutionsApiClient,
+            InstitutionsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            ILocationsApiClient,
+            LocationsApiClient>(
                 normalizedBaseUrl);
 
         return services;

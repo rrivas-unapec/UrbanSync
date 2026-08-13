@@ -1,0 +1,126 @@
+@model LocationsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Ubicaciones";
+}
+
+<div class="mb-4">
+    <h1 class="fw-bold mb-1">Ubicaciones</h1>
+    <p class="text-muted mb-0">Direcciones donde ocurren las incidencias.</p>
+</div>
+
+@if (TempData["LocationsSuccess"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+
+@if (TempData["LocationsError"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <h2 class="h6 fw-bold mb-3">Agregar ubicación</h2>
+
+        @if (Model.OpcionesJurisdiccion.Count == 0)
+        {
+            <p class="text-muted small mb-0">
+                Primero debes registrar al menos una jurisdicción.
+            </p>
+        }
+        else
+        {
+            <form asp-action="Create" method="post" class="row g-2 align-items-end">
+                @Html.AntiForgeryToken()
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Dirección</label>
+                    <input type="text" name="address" class="form-control form-control-sm" maxlength="250" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-semibold">Referencia (opcional)</label>
+                    <input type="text" name="reference" class="form-control form-control-sm" maxlength="250" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-semibold">Jurisdicción</label>
+                    <select name="jurisdictionId" class="form-select form-select-sm" required>
+                        @foreach (var opcion in Model.OpcionesJurisdiccion)
+                        {
+                            <option value="@opcion.Id">@opcion.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small fw-semibold">Lat.</label>
+                    <input type="number" step="0.0000001" name="latitude" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small fw-semibold">Long.</label>
+                    <input type="number" step="0.0000001" name="longitude" class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-sm btn-dark w-100">Agregar</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Dirección</th>
+                        <th>Referencia</th>
+                        <th>Jurisdicción</th>
+                        <th>Coordenadas</th>
+                        <th>Creada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ubicacion in Model.Ubicaciones)
+                    {
+                        <tr>
+                            <td>@ubicacion.Address</td>
+                            <td>@(ubicacion.Reference ?? "—")</td>
+                            <td>@ubicacion.JurisdictionName</td>
+                            <td>
+                                @if (ubicacion.Latitude.HasValue && ubicacion.Longitude.HasValue)
+                                {
+                                    @($"{ubicacion.Latitude:0.000000}, {ubicacion.Longitude:0.000000}")
+                                }
+                                else
+                                {
+                                    @:—
+                                }
+                            </td>
+                            <td>@ubicacion.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                    @if (Model.Ubicaciones.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No hay ubicaciones registradas.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,0 +1,108 @@
+@model InstitutionsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Instituciones";
+}
+
+<div class="mb-4">
+    <h1 class="fw-bold mb-1">Instituciones</h1>
+    <p class="text-muted mb-0">Entidades externas a las que se enruta una incidencia (ej. Empresa Eléctrica, MOPC).</p>
+</div>
+
+@if (TempData["InstitutionsSuccess"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+
+@if (TempData["InstitutionsError"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <h2 class="h6 fw-bold mb-3">Agregar institución</h2>
+
+        <form asp-action="Create" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Nombre</label>
+                <input type="text" name="name" class="form-control form-control-sm" maxlength="150" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Tipo</label>
+                <input type="text" name="institutionType" class="form-control form-control-sm" maxlength="50" placeholder="Electricidad, Infraestructura..." required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Correo de contacto (opcional)</label>
+                <input type="email" name="contactEmail" class="form-control form-control-sm" maxlength="150" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">Teléfono (opcional)</label>
+                <input type="text" name="contactPhone" class="form-control form-control-sm" maxlength="30" />
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-sm btn-dark w-100">Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var institucion in Model.Instituciones)
+                    {
+                        <tr>
+                            <td>@institucion.Name</td>
+                            <td>@institucion.InstitutionType</td>
+                            <td>@(institucion.ContactEmail ?? "—")</td>
+                            <td>@(institucion.ContactPhone ?? "—")</td>
+                            <td>
+                                @if (institucion.IsActive)
+                                {
+                                    <span class="badge bg-success">Activa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Inactiva</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Instituciones.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                No hay instituciones registradas.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
