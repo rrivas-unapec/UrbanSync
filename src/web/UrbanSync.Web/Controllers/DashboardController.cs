@@ -54,7 +54,11 @@ public sealed class DashboardController : Controller
 
         if (User.IsInRole("AnalistaTecnico"))
         {
-            return View("Tecnico");
+            var indicators =
+                await _dashboardPageService.BuildTechnicalIndicatorsAsync(
+                    cancellationToken);
+
+            return View("Tecnico", indicators);
         }
 
         if (User.IsInRole("Ciudadano"))
@@ -96,7 +100,7 @@ public sealed class DashboardController : Controller
         return View(model);
     }
 
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador,AnalistaTecnico")]
     public async Task<IActionResult> Moderacion(
         CancellationToken cancellationToken)
     {
@@ -107,12 +111,14 @@ public sealed class DashboardController : Controller
         return View(model);
     }
 
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador,AnalistaTecnico")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ModeracionAccion(
         int id,
         string accion,
+        int? tipoIncidenciaId,
+        string? prioridad,
         CancellationToken cancellationToken)
     {
         if (!ModerationActions.TryGetValue(
@@ -128,7 +134,11 @@ public sealed class DashboardController : Controller
                 id,
                 new TriageIncidentRequest
                 {
-                    Accion = apiAction
+                    Accion = apiAction,
+                    TipoIncidenciaId = tipoIncidenciaId,
+                    Prioridad = string.IsNullOrWhiteSpace(prioridad)
+                        ? null
+                        : prioridad
                 },
                 cancellationToken);
 

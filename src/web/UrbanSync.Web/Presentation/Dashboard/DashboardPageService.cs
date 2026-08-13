@@ -1,3 +1,4 @@
+using UrbanSync.Web.ApiClients.IncidentTypes;
 using UrbanSync.Web.ApiClients.Incidents;
 using UrbanSync.Web.ApiClients.WorkOrders;
 using UrbanSync.Web.ViewModels;
@@ -25,15 +26,18 @@ public sealed class DashboardPageService : IDashboardPageService
 
     private readonly IIncidentsApiClient _incidentsApiClient;
     private readonly IWorkOrdersApiClient _workOrdersApiClient;
+    private readonly IIncidentTypesApiClient _incidentTypesApiClient;
     private readonly ILogger<DashboardPageService> _logger;
 
     public DashboardPageService(
         IIncidentsApiClient incidentsApiClient,
         IWorkOrdersApiClient workOrdersApiClient,
+        IIncidentTypesApiClient incidentTypesApiClient,
         ILogger<DashboardPageService> logger)
     {
         _incidentsApiClient = incidentsApiClient;
         _workOrdersApiClient = workOrdersApiClient;
+        _incidentTypesApiClient = incidentTypesApiClient;
         _logger = logger;
     }
 
@@ -250,9 +254,17 @@ public sealed class DashboardPageService : IDashboardPageService
     {
         try
         {
-            var incidents = await _incidentsApiClient.GetAllAsync(
+            var incidentsTask = _incidentsApiClient.GetAllAsync(
                 status: "Registrada",
                 cancellationToken: cancellationToken);
+
+            var typesTask = _incidentTypesApiClient.GetAllAsync(
+                cancellationToken);
+
+            await Task.WhenAll(incidentsTask, typesTask);
+
+            var incidents = incidentsTask.Result;
+            var types = typesTask.Result;
 
             return new ModeracionViewModel
             {
@@ -274,6 +286,15 @@ public sealed class DashboardPageService : IDashboardPageService
                             FechaReporte =
                                 incident.FechaReporte
                         })
+                    .ToList(),
+                TiposIncidencia = types
+                    .Where(type => type.IsActive)
+                    .OrderBy(type => type.Name)
+                    .Select(type => new IncidentTypeOptionViewModel
+                    {
+                        Id = type.Id,
+                        Name = type.Name
+                    })
                     .ToList()
             };
         }
@@ -284,6 +305,56 @@ public sealed class DashboardPageService : IDashboardPageService
                 "No se pudo construir la cola de moderación.");
 
             return new ModeracionViewModel
+            {
+                DatosDisponibles = false
+            };
+        }
+    }
+
+    public async Task<TechnicalIndicatorsViewModel>
+        BuildTechnicalIndicatorsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var incidents = await _incidentsApiClient.GetAllAsync(
+                cancellationToken: cancellationToken);
+
+            return new TechnicalIndicatorsViewModel
+            {
+                DatosDisponibles = true,
+                Total = incidents.Count,
+                PorEstado = incidents
+                    .GroupBy(
+                        incident => incident.Estado,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group => new IndicatorCountViewModel
+                    {
+                        Clave = group.Key,
+                        Total = group.Count()
+                    })
+                    .OrderByDescending(item => item.Total)
+                    .ToList(),
+                PorPrioridad = incidents
+                    .GroupBy(
+                        incident => incident.Prioridad,
+                        StringComparer.OrdinalIgnoreCase)
+                    .Select(group => new IndicatorCountViewModel
+                    {
+                        Clave = group.Key,
+                        Total = group.Count()
+                    })
+                    .OrderByDescending(item => item.Total)
+                    .ToList()
+            };
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "No se pudieron construir los indicadores técnicos.");
+
+            return new TechnicalIndicatorsViewModel
             {
                 DatosDisponibles = false
             };

@@ -2,6 +2,10 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Activos urbanos";
+
+    var canManage =
+        User.IsInRole("Administrador") ||
+        User.IsInRole("SupervisorOperaciones");
 }
 
 <div class="mb-4">
@@ -19,53 +23,56 @@
     <div class="alert alert-danger">@error</div>
 }
 
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-4">
-        <h2 class="h6 fw-bold mb-3">Agregar activo</h2>
+@if (canManage)
+{
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h6 fw-bold mb-3">Agregar activo</h2>
 
-        @if (Model.OpcionesJurisdiccion.Count == 0)
-        {
-            <p class="text-muted small mb-0">
-                Primero debes registrar al menos una jurisdicción.
-            </p>
-        }
-        else
-        {
-            <form asp-action="Create" method="post" class="row g-2 align-items-end">
-                @Html.AntiForgeryToken()
+            @if (Model.OpcionesJurisdiccion.Count == 0)
+            {
+                <p class="text-muted small mb-0">
+                    Primero debes registrar al menos una jurisdicción.
+                </p>
+            }
+            else
+            {
+                <form asp-action="Create" method="post" class="row g-2 align-items-end">
+                    @Html.AntiForgeryToken()
 
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Código</label>
-                    <input type="text" name="code" class="form-control form-control-sm" maxlength="50" required />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-semibold">Nombre</label>
-                    <input type="text" name="name" class="form-control form-control-sm" maxlength="100" required />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Tipo</label>
-                    <input type="text" name="type" class="form-control form-control-sm" maxlength="50" placeholder="Poste, Semáforo..." required />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Estado</label>
-                    <input type="text" name="status" class="form-control form-control-sm" maxlength="30" placeholder="Operativo" />
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-semibold">Jurisdicción</label>
-                    <select name="jurisdictionId" class="form-select form-select-sm" required>
-                        @foreach (var opcion in Model.OpcionesJurisdiccion)
-                        {
-                            <option value="@opcion.Id">@opcion.Name</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-sm btn-dark w-100">Agregar</button>
-                </div>
-            </form>
-        }
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Código</label>
+                        <input type="text" name="code" class="form-control form-control-sm" maxlength="50" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Nombre</label>
+                        <input type="text" name="name" class="form-control form-control-sm" maxlength="100" required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Tipo</label>
+                        <input type="text" name="type" class="form-control form-control-sm" maxlength="50" placeholder="Poste, Semáforo..." required />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Estado</label>
+                        <input type="text" name="status" class="form-control form-control-sm" maxlength="30" placeholder="Operativo" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">Jurisdicción</label>
+                        <select name="jurisdictionId" class="form-select form-select-sm" required>
+                            @foreach (var opcion in Model.OpcionesJurisdiccion)
+                            {
+                                <option value="@opcion.Id">@opcion.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-sm btn-dark w-100">Agregar</button>
+                    </div>
+                </form>
+            }
+        </div>
     </div>
-</div>
+}
 
 @if (!Model.DatosDisponibles)
 {
