@@ -1,7 +1,11 @@
 enum RoleGroup {
-  citizen,
-  technician,
-  manager,
+  ciudadano,
+  gestorUbicacion,
+  gestorEvidencias,
+  analistaTecnico,
+  supervisorOperaciones,
+  administrador,
+  desconocido,
 }
 
 class AppUser {
@@ -28,34 +32,89 @@ class AppUser {
         .trim()
         .toLowerCase()
         .replaceAll(' ', '')
-        .replaceAll('_', '');
+        .replaceAll('_', '')
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
 
     switch (normalizedRole) {
       case 'admin':
       case 'administrador':
+        return RoleGroup.administrador;
+
       case 'supervisor':
       case 'supervisoroperaciones':
-      case 'gestor':
-        return RoleGroup.manager;
+        return RoleGroup.supervisorOperaciones;
 
-      case 'tecnico':
-      case 'técnico':
       case 'analista':
       case 'analistatecnico':
-      case 'analistatécnico':
-        return RoleGroup.technician;
+      case 'tecnico':
+        return RoleGroup.analistaTecnico;
+
+      case 'gestorubicacion':
+        return RoleGroup.gestorUbicacion;
+
+      case 'gestorevidencias':
+        return RoleGroup.gestorEvidencias;
 
       case 'ciudadano':
+        return RoleGroup.ciudadano;
+
       default:
-        return RoleGroup.citizen;
+        return RoleGroup.desconocido;
     }
   }
 
-  bool get isManager => roleGroup == RoleGroup.manager;
+  String get roleLabel {
+    switch (roleGroup) {
+      case RoleGroup.administrador:
+        return 'Administrador';
+      case RoleGroup.supervisorOperaciones:
+        return 'Supervisor de Operaciones';
+      case RoleGroup.analistaTecnico:
+        return 'Analista Técnico';
+      case RoleGroup.gestorUbicacion:
+        return 'Gestor de Ubicación';
+      case RoleGroup.gestorEvidencias:
+        return 'Gestor de Evidencias';
+      case RoleGroup.ciudadano:
+        return 'Ciudadano';
+      case RoleGroup.desconocido:
+        return role.isEmpty ? 'Sin rol' : role;
+    }
+  }
 
-  bool get isTechnician => roleGroup == RoleGroup.technician;
+  bool get isCitizen => roleGroup == RoleGroup.ciudadano;
 
-  bool get isCitizen => roleGroup == RoleGroup.citizen;
+  bool get isAdmin => roleGroup == RoleGroup.administrador;
+
+  bool get isOperationsSupervisor =>
+      roleGroup == RoleGroup.supervisorOperaciones;
+
+  bool get isTechnician => roleGroup == RoleGroup.analistaTecnico;
+
+  bool get isLocationManager => roleGroup == RoleGroup.gestorUbicacion;
+
+  bool get isEvidenceManager => roleGroup == RoleGroup.gestorEvidencias;
+
+  bool get isManager => isAdmin || isOperationsSupervisor;
+
+  bool get canReadAudit => isManager;
+
+  bool get canReadIncidentWork => isManager || isTechnician;
+
+  bool get canTriage => isManager || isTechnician;
+
+  bool get canReadAssets => isManager || isTechnician || isLocationManager;
+
+  bool get canReadJurisdictions =>
+      isManager || isTechnician || isLocationManager;
+
+  bool get canReadClaims => isManager || isCitizen;
+
+  bool get canReadReports => isManager || isTechnician;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(

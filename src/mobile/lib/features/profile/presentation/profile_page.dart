@@ -42,7 +42,7 @@ class ProfilePage extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            user.role,
+            user.roleLabel,
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.mutedForeground),
           ),
@@ -65,7 +65,7 @@ class ProfilePage extends ConsumerWidget {
                 _InfoRow(
                   icon: Icons.admin_panel_settings_outlined,
                   label: 'Rol',
-                  value: user.role,
+                  value: user.roleLabel,
                 ),
                 const Divider(height: 20),
                 _InfoRow(
@@ -79,7 +79,7 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          if (!user.isTechnician) ...[
+          if (user.canReadClaims) ...[
             SecondaryButton(
               label: user.isCitizen ? 'Mis reclamaciones' : 'Reclamaciones',
               icon: Icons.support_agent_outlined,
@@ -89,7 +89,7 @@ class ProfilePage extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
           ],
-          if (!user.isCitizen) ...[
+          if (user.canReadJurisdictions) ...[
             SecondaryButton(
               label: 'Catálogos',
               icon: Icons.folder_outlined,

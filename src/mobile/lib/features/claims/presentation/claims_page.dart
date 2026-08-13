@@ -12,7 +12,9 @@ import '../../auth/presentation/auth_controller.dart';
 import 'claims_providers.dart';
 
 class ClaimsPage extends ConsumerWidget {
-  const ClaimsPage({super.key});
+  const ClaimsPage({super.key, this.showAppBar = true});
+
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,11 +22,15 @@ class ClaimsPage extends ConsumerWidget {
     final user = ref.watch(authControllerProvider).user;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          user?.isCitizen ?? false ? 'Mis reclamaciones' : 'Reclamaciones',
-        ),
-      ),
+      appBar: showAppBar
+          ? AppBar(
+              title: Text(
+                user?.isCitizen ?? false
+                    ? 'Mis reclamaciones'
+                    : 'Reclamaciones',
+              ),
+            )
+          : null,
       floatingActionButton: (user?.isCitizen ?? false)
           ? FloatingActionButton.extended(
               onPressed: () => context.push('/claims/new'),
