@@ -309,6 +309,22 @@
 
                 </a>
 
+                <a
+                    asp-controller="Assets"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Assets"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-signpost-split"></i>
+
+                    <span class="admin-nav-label">
+                        Activos urbanos
+                    </span>
+
+                </a>
+
                 @if (canViewAudit)
                 {
                     <a

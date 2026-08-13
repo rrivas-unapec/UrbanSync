@@ -1,3 +1,4 @@
+using UrbanSync.Web.Presentation.Assets;
 using UrbanSync.Web.Presentation.Claims;
 using UrbanSync.Web.Presentation.Dashboard;
 using UrbanSync.Web.Presentation.Departments;
@@ -43,6 +44,10 @@ public static class PresentationServiceCollectionExtensions
         services.AddScoped<
             ILocationsPageService,
             LocationsPageService>();
+
+        services.AddScoped<
+            IAssetsPageService,
+            AssetsPageService>();
 
         return services;
     }
