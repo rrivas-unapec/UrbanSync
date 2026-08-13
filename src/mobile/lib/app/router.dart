@@ -2,15 +2,30 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/auth/domain/app_user.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/change_password_page.dart';
+import '../features/catalogs/presentation/catalogs_page.dart';
+import '../features/claims/presentation/claim_detail_page.dart';
+import '../features/claims/presentation/claims_page.dart';
+import '../features/claims/presentation/create_claim_page.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/auth/presentation/register_page.dart';
 import '../features/auth/presentation/splash_page.dart';
 import '../features/home/presentation/home_page.dart';
+import '../features/incidents/presentation/assets_page.dart';
 import '../features/incidents/presentation/incident_detail_page.dart';
 import '../features/incidents/presentation/report_incident_page.dart';
 import '../features/triage/presentation/triage_page.dart';
+
+bool _puedeEntrar(AppUser user, String location) {
+  if (location.startsWith('/report')) return user.isCitizen;
+  if (location.startsWith('/claims')) return user.canReadClaims;
+  if (location.startsWith('/catalogs')) return user.canReadJurisdictions;
+  if (location.startsWith('/assets')) return user.canReadAssets;
+  if (location.startsWith('/triage')) return user.canTriage;
+  return true;
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -35,7 +50,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (onSplash || onAuthPage) return '/home';
-      return null;
+
+      final user = ref.read(authControllerProvider).user;
+      if (user == null) return null;
+
+      return _puedeEntrar(user, location) ? null : '/home';
     },
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
@@ -48,6 +67,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/change-password',
         builder: (context, state) => const ChangePasswordPage(),
+      ),
+      GoRoute(path: '/claims', builder: (context, state) => const ClaimsPage()),
+      GoRoute(
+        path: '/claims/new',
+        builder: (context, state) => const CreateClaimPage(),
+      ),
+      GoRoute(
+        path: '/claims/:id',
+        builder: (context, state) =>
+            ClaimDetailPage(claimId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(path: '/assets', builder: (context, state) => const AssetsPage()),
+      GoRoute(
+        path: '/catalogs',
+        builder: (context, state) => const CatalogsPage(),
       ),
       GoRoute(
         path: '/report',

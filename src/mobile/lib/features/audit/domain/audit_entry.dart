@@ -42,9 +42,6 @@ class AuditChange {
 
   static const String _sinValor = '—';
 
-  /// Extrae los cambios del texto libre `detalle`, que el backend y la app
-  /// escriben con la convención `Campo: antes → después`, varios separados
-  /// por `;`. Un valor `—` representa la ausencia de dato.
   static List<AuditChange> parse(String? detalle) {
     if (detalle == null || detalle.isEmpty) return const [];
 
@@ -118,8 +115,6 @@ class AuditEntry {
 
   bool get esDeIncidencia => entidad == entidadIncidencias && entidadId != null;
 
-  /// `usuarioId` llega como entero en unas implementaciones del API y como
-  /// GUID en otras, así que se normaliza a texto.
   factory AuditEntry.fromJson(Map<String, dynamic> json) => AuditEntry(
     id: (json['id'] as num).toInt(),
     accion: json['accion'] as String? ?? '',

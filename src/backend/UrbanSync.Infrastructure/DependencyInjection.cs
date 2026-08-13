@@ -52,6 +52,42 @@ public static class DependencyInjection
             AssetRepository>();
 
         services.AddScoped<
+            IJurisdictionRepository,
+            JurisdictionRepository>();
+
+        services.AddScoped<
+            IDepartmentRepository,
+            DepartmentRepository>();
+
+        services.AddScoped<
+            IInstitutionRepository,
+            InstitutionRepository>();
+
+        services.AddScoped<
+            IEvidenceRepository,
+            EvidenceRepository>();
+
+        services.AddScoped<
+            ILocationRepository,
+            LocationRepository>();
+
+        services.AddScoped<
+            ITechnicalAnalysisRepository,
+            TechnicalAnalysisRepository>();
+
+        services.AddScoped<
+            IJobRepository,
+            JobRepository>();
+
+        services.AddScoped<
+            IClaimRepository,
+            ClaimRepository>();
+
+        services.AddScoped<
+            IReportRepository,
+            ReportRepository>();
+
+        services.AddScoped<
             IPasswordHasher,
             PasswordHasher>();
 

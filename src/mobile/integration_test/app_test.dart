@@ -24,7 +24,6 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const ProviderScope(child: UrbanSyncApp()));
 
-    // Splash → restauración de sesión → Login.
     final onLogin = await _waitFor(tester, find.text('Iniciar sesión'));
     expect(onLogin, isTrue, reason: 'No llegó a la pantalla de login');
 
@@ -39,7 +38,6 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Iniciar sesión'));
 
-    // Login real contra la API dockerizada → redirección al home del gestor.
     final onHome = await _waitFor(tester, find.text('Cola de análisis'));
     expect(onHome, isTrue,
         reason:
@@ -48,13 +46,11 @@ void main() {
     await binding.takeScreenshot('02-home-triage');
     expect(find.text('Indicadores'), findsWidgets);
 
-    // Indicadores (dashboard con fl_chart).
     await tester.tap(find.text('Indicadores'));
     await _waitFor(tester, find.text('Incidencias por estado'));
     await tester.pump(const Duration(seconds: 1));
     await binding.takeScreenshot('03-dashboard');
 
-    // Perfil.
     await tester.tap(find.text('Perfil'));
     await _waitFor(tester, find.text('Cerrar sesión'));
     await tester.pump(const Duration(seconds: 1));

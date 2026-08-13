@@ -5,6 +5,15 @@ using UrbanSync.Application.Features.Incidents;
 using UrbanSync.Application.Features.IncidentType;
 using UrbanSync.Application.Features.Roles;
 using UrbanSync.Application.Features.Users;
+using UrbanSync.Application.Features.Jurisdiction;
+using UrbanSync.Application.Features.Departament;
+using UrbanSync.Application.Features.Institution;
+using UrbanSync.Application.Features.Evidence;
+using UrbanSync.Application.Features.Location;
+using UrbanSync.Application.Features.TechnicalAnalysis;
+using UrbanSync.Application.Features.Job;
+using UrbanSync.Application.Features.Claim;
+using UrbanSync.Application.Features.Report;
 
 namespace UrbanSync.Application;
 
@@ -40,6 +49,42 @@ public static class DependencyInjection
         services.AddScoped<
             IAssetService,
             AssetService>();
+
+        services.AddScoped<
+            IJurisdictionService,
+            JurisdictionService>();
+
+        services.AddScoped<
+            IDepartmentService,
+            DepartmentService>();
+
+        services.AddScoped<
+            IInstitutionService,
+            InstitutionService>();
+
+        services.AddScoped<
+            IEvidenceService,
+            EvidenceService>();
+        
+        services.AddScoped<
+            ILocationService,
+            LocationService>();
+
+        services.AddScoped<
+            ITechnicalAnalysisService,
+            TechnicalAnalysisService>();
+
+        services.AddScoped<
+            IJobService,
+            JobService>();
+
+        services.AddScoped<
+            IClaimService,
+            ClaimService>();
+
+        services.AddScoped<
+            IReportService,
+            ReportService>();
 
         return services;
     }
