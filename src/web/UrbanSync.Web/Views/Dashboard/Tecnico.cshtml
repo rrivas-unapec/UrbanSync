@@ -1,32 +1,101 @@
+@model TechnicalIndicatorsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Panel de Analista Técnico";
+}
+
+<div class="mb-4">
+    <span class="badge bg-warning text-dark mb-2">Analista Técnico</span>
+    <h1 class="fw-bold mb-1">Panel técnico</h1>
+    <p class="text-muted mb-0">Cola de análisis, evidencia e indicadores de las incidencias.</p>
+</div>
+
+@if (!Model.DatosDisponibles)
+{
+    <div class="card border-0 shadow-sm rounded-4 admin-kpi-pending mb-4">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-wifi-off fs-1 text-muted mb-3 d-block"></i>
+            <h3 class="fw-bold fs-5 mb-1 text-muted">Sin datos disponibles</h3>
+            <p class="text-muted mb-0">La API de UrbanSync no respondió. Recarga la página para reintentar.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body">
+                    <span class="text-muted small d-block">Total incidencias</span>
+                    <p class="fs-3 fw-bold mb-0">@Model.Total.ToString("N0")</p>
+                </div>
+            </div>
+        </div>
+
+        @foreach (var estado in Model.PorEstado)
+        {
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body">
+                        <span class="text-muted small d-block">@estado.Clave</span>
+                        <p class="fs-3 fw-bold mb-0">@estado.Total.ToString("N0")</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        @foreach (var prioridad in Model.PorPrioridad)
+        {
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body">
+                        <span class="text-muted small d-block">Prioridad @prioridad.Clave</span>
+                        <p class="fs-4 fw-bold mb-0">@prioridad.Total.ToString("N0")</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
 <div class="row g-4">
-    <div class="col-12">
-        <div class="p-4 p-md-5 bg-white rounded-4 shadow-sm border">
-            <span class="badge bg-warning text-dark mb-3">Técnico</span>
-            <h1 class="fw-bold mb-2">Panel de Técnico</h1>
-            <p class="text-muted mb-4">
-                Rol preparado para futuras órdenes de trabajo, evidencias de reparación y seguimiento de intervenciones.
-            </p>
-
-            <div class="alert alert-info rounded-4 mb-0">
-                En esta épica solo se implementa autenticación, roles, accesos y trazabilidad.
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <i class="bi bi-exclamation-circle fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Cola de análisis</h5>
+                <p class="text-muted">Revisa incidencias registradas, cambia tipo/prioridad y decide una acción.</p>
+                <a asp-controller="Dashboard" asp-action="Moderacion" class="btn btn-outline-dark">
+                    Ir a la cola
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body">
-                <h5 class="fw-bold">Acceso técnico</h5>
-                <p class="text-muted mb-0">Cuenta con permisos limitados según su rol dentro de la plataforma.</p>
+            <div class="card-body p-4">
+                <i class="bi bi-exclamation-triangle fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Incidencias</h5>
+                <p class="text-muted">Consulta el detalle, evidencia y estado de cada incidencia.</p>
+                <a asp-controller="Incidents" asp-action="Index" class="btn btn-outline-dark">
+                    Ver incidencias
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body">
-                <h5 class="fw-bold">Próximamente</h5>
-                <p class="text-muted mb-0">Registro de intervenciones, fotografías y evidencias geolocalizadas.</p>
+            <div class="card-body p-4">
+                <i class="bi bi-signpost-split fs-2 text-primary mb-3 d-block"></i>
+                <h5 class="fw-bold">Activos urbanos</h5>
+                <p class="text-muted">Consulta el historial de incidencias por activo.</p>
+                <a asp-controller="Assets" asp-action="Index" class="btn btn-outline-dark">
+                    Ver activos
+                </a>
             </div>
         </div>
     </div>

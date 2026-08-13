@@ -229,6 +229,102 @@
 
                 </a>
 
+                <a
+                    asp-controller="Claims"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Claims"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-chat-left-dots"></i>
+
+                    <span class="admin-nav-label">
+                        Reclamaciones
+                    </span>
+
+                </a>
+
+                <a
+                    asp-controller="Jurisdictions"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Jurisdictions"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-diagram-3"></i>
+
+                    <span class="admin-nav-label">
+                        Jurisdicciones
+                    </span>
+
+                </a>
+
+                <a
+                    asp-controller="Departments"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Departments"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-diagram-2"></i>
+
+                    <span class="admin-nav-label">
+                        Departamentos
+                    </span>
+
+                </a>
+
+                <a
+                    asp-controller="Institutions"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Institutions"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-building"></i>
+
+                    <span class="admin-nav-label">
+                        Instituciones
+                    </span>
+
+                </a>
+
+                <a
+                    asp-controller="Locations"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Locations"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-geo-alt"></i>
+
+                    <span class="admin-nav-label">
+                        Ubicaciones
+                    </span>
+
+                </a>
+
+                <a
+                    asp-controller="Assets"
+                    asp-action="Index"
+                    class="admin-nav-link
+                    @(currentController == "Assets"
+                        ? "active"
+                        : "")">
+
+                    <i class="bi bi-signpost-split"></i>
+
+                    <span class="admin-nav-label">
+                        Activos urbanos
+                    </span>
+
+                </a>
+
                 @if (canViewAudit)
                 {
                     <a

@@ -12,6 +12,8 @@ namespace UrbanSync.Application.Features.Job
 
         public int IncidentId { get; set; }
 
+        public string CodigoCaso { get; set; } = string.Empty;
+
         public int AssignedUserId { get; set; }
 
         public string AssignedUserName { get; set; } = string.Empty;

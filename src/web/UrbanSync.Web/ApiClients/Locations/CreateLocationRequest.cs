@@ -1,0 +1,14 @@
+namespace UrbanSync.Web.ApiClients.Locations;
+
+public sealed class CreateLocationRequest
+{
+    public string Address { get; set; } = string.Empty;
+
+    public string? Reference { get; set; }
+
+    public decimal? Latitude { get; set; }
+
+    public decimal? Longitude { get; set; }
+
+    public int JurisdictionId { get; set; }
+}

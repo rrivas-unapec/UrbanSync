@@ -6,10 +6,12 @@ using UrbanSync.Application.Features.Users;
 namespace UrbanSync.Api.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Administrador")]
+[Authorize]
 [Route("api/usuarios")]
 public sealed class UsuariosController : ControllerBase
 {
+    private const string ReadRoles = "Administrador,SupervisorOperaciones";
+
     private readonly IUsuarioService _usuarioService;
 
     public UsuariosController(IUsuarioService usuarioService)
@@ -17,6 +19,7 @@ public sealed class UsuariosController : ControllerBase
         _usuarioService = usuarioService;
     }
 
+    [Authorize(Roles = ReadRoles)]
     [HttpGet]
     [ProducesResponseType<IEnumerable<UserResponse>>(
         StatusCodes.Status200OK)]
@@ -27,6 +30,7 @@ public sealed class UsuariosController : ControllerBase
         return Ok(users.Select(MapUser));
     }
 
+    [Authorize(Roles = ReadRoles)]
     [HttpGet("{id:int}")]
     [ProducesResponseType<UserResponse>(
         StatusCodes.Status200OK)]
@@ -45,6 +49,7 @@ public sealed class UsuariosController : ControllerBase
         return Ok(MapUser(user));
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpPost]
     [ProducesResponseType<UserResponse>(
         StatusCodes.Status201Created)]
@@ -73,6 +78,7 @@ public sealed class UsuariosController : ControllerBase
             response);
     }
 
+    [Authorize(Roles = "Administrador")]
     [HttpPatch("{id:int}/toggle-status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(

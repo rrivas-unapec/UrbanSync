@@ -1,8 +1,7 @@
-@model UrbanSync.Web.ApiClients.Incidents.IncidentResponse
+@model IncidentDetailsViewModel
 
 @{
-    Layout = "_AdminLayout";
-    ViewData["Title"] = "Detalle de incidencia";
+    var incident = Model.Incident;
 
     var canManage =
         User.IsInRole("Administrador") ||
@@ -12,6 +11,9 @@
     var canViewAudit =
         User.IsInRole("Administrador") ||
         User.IsInRole("SupervisorOperaciones");
+
+    Layout = canManage ? "_AdminLayout" : "_Layout";
+    ViewData["Title"] = "Detalle de incidencia";
 }
 
 <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-4">
@@ -27,21 +29,21 @@
         </a>
 
         <h1 class="fw-bold mt-2 mb-1">
-            @Model.CodigoCaso
+            @incident.CodigoCaso
         </h1>
 
         <div class="d-flex gap-2 flex-wrap">
 
             <span class="badge text-bg-light border">
-                @FormatStatus(Model.Estado)
+                @FormatStatus(incident.Estado)
             </span>
 
             <span class="badge text-bg-primary">
-                @Model.Prioridad
+                @incident.Prioridad
             </span>
 
             <span class="badge text-bg-light border">
-                @Model.TipoIncidencia
+                @incident.TipoIncidencia
             </span>
 
         </div>
@@ -77,7 +79,7 @@
                 </h2>
 
                 <p class="mb-4">
-                    @Model.Descripcion
+                    @incident.Descripcion
                 </p>
 
                 <div class="row g-3">
@@ -89,7 +91,7 @@
                         </span>
 
                         <strong>
-                            @Model.Direccion
+                            @incident.Direccion
                         </strong>
                     </div>
 
@@ -100,9 +102,9 @@
                         </span>
 
                         <strong>
-                            @(string.IsNullOrWhiteSpace(Model.Referencia)
+                            @(string.IsNullOrWhiteSpace(incident.Referencia)
                                 ? "—"
-                                : Model.Referencia)
+                                : incident.Referencia)
                         </strong>
 
                     </div>
@@ -114,7 +116,7 @@
                         </span>
 
                         <strong>
-                            @Model.Jurisdiccion
+                            @incident.Jurisdiccion
                         </strong>
 
                     </div>
@@ -126,7 +128,7 @@
                         </span>
 
                         <strong>
-                            @Model.UsuarioReporta
+                            @incident.UsuarioReporta
                         </strong>
 
                     </div>
@@ -138,7 +140,7 @@
                         </span>
 
                         <strong>
-                            @Model.FechaReporte.ToString(
+                            @incident.FechaReporte.ToString(
                                 "dd/MM/yyyy HH:mm")
                         </strong>
 
@@ -152,16 +154,16 @@
 
                         <strong>
                             @(string.IsNullOrWhiteSpace(
-                                Model.InstitucionAsignada)
+                                incident.InstitucionAsignada)
                                 ? "Sin asignar"
-                                : Model.InstitucionAsignada)
+                                : incident.InstitucionAsignada)
                         </strong>
 
                     </div>
 
                     @if (
-                        Model.Latitud.HasValue &&
-                        Model.Longitud.HasValue)
+                        incident.Latitud.HasValue &&
+                        incident.Longitud.HasValue)
                     {
                         <div class="col-12">
 
@@ -170,14 +172,168 @@
                             </span>
 
                             <strong>
-                                @Model.Latitud.Value.ToString("0.000000"),
-                                @Model.Longitud.Value.ToString("0.000000")
+                                @incident.Latitud.Value.ToString("0.000000"),
+                                @incident.Longitud.Value.ToString("0.000000")
                             </strong>
 
                         </div>
                     }
 
                 </div>
+
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+            <div class="card-body p-4">
+
+                <h2 class="h5 fw-bold mb-3">
+                    Evidencias
+                </h2>
+
+                @if (!Model.EvidenciasDisponibles)
+                {
+                    <p class="text-muted small mb-0">
+                        No se pudieron consultar las evidencias.
+                    </p>
+                }
+                else
+                {
+                    @if (Model.Evidencias.Count == 0)
+                    {
+                        <p class="text-muted small mb-3">
+                            No hay evidencias registradas para esta incidencia.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3 mb-3">
+                            @foreach (var evidencia in Model.Evidencias)
+                            {
+                                <div class="border rounded-3 p-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                        <span class="badge text-bg-light border">
+                                            @evidencia.EvidenceType
+                                        </span>
+                                        <span class="text-muted small">
+                                            @evidencia.UploadedByUserName
+                                            ·
+                                            @evidencia.UploadedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </span>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(evidencia.Description))
+                                    {
+                                        <p class="mb-1">@evidencia.Description</p>
+                                    }
+
+                                    <a href="@evidencia.FilePath" target="_blank" rel="noopener" class="small">
+                                        @evidencia.FilePath
+                                    </a>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (canManage)
+                    {
+                        <form asp-action="UploadEvidence" method="post" class="border-top pt-3">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="incidentId" value="@incident.Id" />
+
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">Tipo</label>
+                                    <select name="evidenceType" class="form-select form-select-sm" required>
+                                        <option value="Foto">Foto</option>
+                                        <option value="Video">Video</option>
+                                        <option value="Documento">Documento</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label small fw-semibold">Ruta o URL del archivo</label>
+                                    <input type="text" name="filePath" class="form-control form-control-sm" maxlength="400" required />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Descripción (opcional)</label>
+                                    <input type="text" name="description" class="form-control form-control-sm" maxlength="300" />
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-sm btn-dark">
+                                        Agregar evidencia
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                }
+
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+
+            <div class="card-body p-4">
+
+                <h2 class="h5 fw-bold mb-3">
+                    Análisis técnico
+                </h2>
+
+                @if (!Model.AnalisisTecnicoDisponible)
+                {
+                    <p class="text-muted small mb-0">
+                        No se pudo consultar el análisis técnico.
+                    </p>
+                }
+                else if (Model.AnalisisTecnico is not null)
+                {
+                    <p class="text-muted small mb-1">
+                        @Model.AnalisisTecnico.TechnicalUserName
+                        ·
+                        @Model.AnalisisTecnico.AnalysisDate.ToString("dd/MM/yyyy HH:mm")
+                    </p>
+
+                    <p class="mb-2">
+                        <strong>Diagnóstico:</strong>
+                        @Model.AnalisisTecnico.Diagnosis
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.AnalisisTecnico.RecommendedActions))
+                    {
+                        <p class="mb-0">
+                            <strong>Acciones recomendadas:</strong>
+                            @Model.AnalisisTecnico.RecommendedActions
+                        </p>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted small mb-3">
+                        Esta incidencia todavía no tiene un análisis técnico registrado.
+                    </p>
+
+                    @if (canManage)
+                    {
+                        <form asp-action="SaveTechnicalAnalysis" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="incidentId" value="@incident.Id" />
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Diagnóstico</label>
+                                <textarea name="diagnosis" class="form-control form-control-sm" rows="3" maxlength="1000" required></textarea>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-semibold">Acciones recomendadas (opcional)</label>
+                                <textarea name="recommendedActions" class="form-control form-control-sm" rows="2" maxlength="1000"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-sm btn-dark">
+                                Guardar análisis
+                            </button>
+                        </form>
+                    }
+                }
 
             </div>
         </div>
@@ -240,14 +396,14 @@
                         <input
                             type="hidden"
                             name="id"
-                            value="@Model.Id" />
+                            value="@incident.Id" />
 
-                        @if (Model.InstitucionAsignadaId.HasValue)
+                        @if (incident.InstitucionAsignadaId.HasValue)
                         {
                             <input
                                 type="hidden"
                                 name="institucionAsignadaId"
-                                value="@Model.InstitucionAsignadaId" />
+                                value="@incident.InstitucionAsignadaId" />
                         }
 
                         <label
@@ -274,7 +430,7 @@
                                 })
                             {
                                 if (string.Equals(
-                                    Model.Estado,
+                                    incident.Estado,
                                     status,
                                     StringComparison.OrdinalIgnoreCase))
                                 {

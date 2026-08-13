@@ -4,6 +4,7 @@ public sealed class ModeracionViewModel
 {
     public bool DatosDisponibles { get; set; } = true;
     public List<IncidentQueueItemViewModel> Cola { get; set; } = [];
+    public List<IncidentTypeOptionViewModel> TiposIncidencia { get; set; } = [];
 }
 
 public sealed class IncidentQueueItemViewModel

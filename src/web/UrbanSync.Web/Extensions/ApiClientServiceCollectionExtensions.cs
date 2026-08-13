@@ -1,8 +1,16 @@
 using UrbanSync.Web.ApiClients.Activity;
+using UrbanSync.Web.ApiClients.Assets;
 using UrbanSync.Web.ApiClients.Authentication;
+using UrbanSync.Web.ApiClients.Claims;
+using UrbanSync.Web.ApiClients.Departments;
+using UrbanSync.Web.ApiClients.Evidence;
+using UrbanSync.Web.ApiClients.IncidentTypes;
 using UrbanSync.Web.ApiClients.Incidents;
-using UrbanSync.Web.ApiClients.Reports;
+using UrbanSync.Web.ApiClients.Institutions;
+using UrbanSync.Web.ApiClients.Jurisdictions;
+using UrbanSync.Web.ApiClients.Locations;
 using UrbanSync.Web.ApiClients.Roles;
+using UrbanSync.Web.ApiClients.TechnicalAnalysis;
 using UrbanSync.Web.ApiClients.Users;
 using UrbanSync.Web.ApiClients.WorkOrders;
 using UrbanSync.Web.Authentication;
@@ -50,11 +58,6 @@ public static class ApiClientServiceCollectionExtensions
                 normalizedBaseUrl);
 
         services.AddUrbanSyncHttpClient<
-            IReportsApiClient,
-            ReportsApiClient>(
-                normalizedBaseUrl);
-
-        services.AddUrbanSyncHttpClient<
             IIncidentsApiClient,
             IncidentsApiClient>(
                 normalizedBaseUrl);
@@ -62,6 +65,51 @@ public static class ApiClientServiceCollectionExtensions
         services.AddUrbanSyncHttpClient<
             IWorkOrdersApiClient,
             WorkOrdersApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IClaimsApiClient,
+            ClaimsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IEvidenceApiClient,
+            EvidenceApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            ITechnicalAnalysisApiClient,
+            TechnicalAnalysisApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IJurisdictionsApiClient,
+            JurisdictionsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IDepartmentsApiClient,
+            DepartmentsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IInstitutionsApiClient,
+            InstitutionsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            ILocationsApiClient,
+            LocationsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IAssetsApiClient,
+            AssetsApiClient>(
+                normalizedBaseUrl);
+
+        services.AddUrbanSyncHttpClient<
+            IIncidentTypesApiClient,
+            IncidentTypesApiClient>(
                 normalizedBaseUrl);
 
         return services;

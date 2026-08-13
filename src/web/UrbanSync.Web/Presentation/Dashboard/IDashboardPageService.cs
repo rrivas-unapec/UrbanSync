@@ -18,4 +18,7 @@ public interface IDashboardPageService
 
     Task<ModeracionViewModel> BuildModerationQueueAsync(
         CancellationToken cancellationToken = default);
+
+    Task<TechnicalIndicatorsViewModel> BuildTechnicalIndicatorsAsync(
+        CancellationToken cancellationToken = default);
 }

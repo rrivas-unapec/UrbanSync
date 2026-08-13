@@ -11,6 +11,10 @@ public interface IIncidentsApiClient
         int id,
         CancellationToken cancellationToken = default);
 
+    Task<IncidentResponse?> CreateAsync(
+        CreateIncidentRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<IncidentResponse?> UpdateStatusAsync(
         int id,
         UpdateIncidentStatusRequest request,
